@@ -1,0 +1,125 @@
+{
+  "totalUsers": 156,
+  "activeCities": 89,
+  "platformRevenue": 25600,
+  "activeSubscriptions": 142,
+  "recentActivity": [
+    {
+      "Id": 1,
+      "action": "New city claimed",
+      "user": "Sarah Johnson",
+      "time": "2 hours ago",
+      "icon": "Building"
+    },
+    {
+      "Id": 2,
+      "action": "Subscription upgraded",
+      "user": "Mike Chen",
+      "time": "4 hours ago",
+      "icon": "CreditCard"
+    },
+    {
+      "Id": 3,
+      "action": "New user registered",
+      "user": "Emma Davis",
+      "time": "6 hours ago",
+      "icon": "UserPlus"
+    }
+  ],
+  "topCitiesByRevenue": [
+    {
+      "name": "Singapore",
+      "owner": "John Chen",
+      "revenue": 2400,
+      "platformFee": "$360"
+    },
+    {
+      "name": "Tokyo",
+      "owner": "Yuki Tanaka",
+      "revenue": 1800,
+      "platformFee": "$180"
+    },
+    {
+      "name": "London",
+      "owner": "James Wilson",
+      "revenue": 1200,
+      "platformFee": "$120"
+    }
+  ],
+  "users": [
+    {
+      "Id": 1,
+      "name": "John Chen",
+      "email": "john@example.com",
+      "subscriptionTier": "pro",
+      "cities": 2,
+      "revenue": 1850,
+      "status": "active"
+    },
+    {
+      "Id": 2,
+      "name": "Sarah Johnson",
+      "email": "sarah@example.com",
+      "subscriptionTier": "starter",
+      "cities": 1,
+      "revenue": 420,
+      "status": "active"
+    },
+    {
+      "Id": 3,
+      "name": "Mike Chen",
+      "email": "mike@example.com",
+      "subscriptionTier": "enterprise",
+      "cities": 5,
+      "revenue": 3200,
+      "status": "active"
+    },
+    {
+      "Id": 4,
+      "name": "Emma Davis",
+      "email": "emma@example.com",
+      "subscriptionTier": "pro",
+      "cities": 3,
+      "revenue": 950,
+      "status": "active"
+    }
+  ],
+  "cities": [
+    {
+      "Id": 1,
+      "name": "Singapore",
+      "owner": "John Chen",
+      "subdomain": "singapore",
+      "listings": 12,
+      "revenue": 1850,
+      "status": "active"
+    },
+    {
+      "Id": 2,
+      "name": "Tokyo",
+      "owner": "Yuki Tanaka",
+      "subdomain": "tokyo",
+      "listings": 8,
+      "revenue": 1200,
+      "status": "active"
+    },
+    {
+      "Id": 3,
+      "name": "London",
+      "owner": "James Wilson",
+      "subdomain": "london",
+      "listings": 6,
+      "revenue": 850,
+      "status": "inactive"
+    },
+    {
+      "Id": 4,
+      "name": "New York",
+      "owner": "Sarah Johnson",
+      "subdomain": "newyork",
+      "listings": 4,
+      "revenue": 420,
+      "status": "active"
+    }
+  ]
+}

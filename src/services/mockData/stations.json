@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "cityId": 1,
+    "name": "Marina Bay",
+    "line": "Circle Line",
+    "description": "Major interchange station with shopping and dining",
+    "order": 1
+  },
+  {
+    "Id": 2,
+    "cityId": 1,
+    "name": "Orchard",
+    "line": "North-South Line",
+    "description": "Premier shopping district with luxury malls",
+    "order": 2
+  },
+  {
+    "Id": 3,
+    "cityId": 1,
+    "name": "Raffles Place",
+    "line": "East-West Line",
+    "description": "Financial district with historic attractions",
+    "order": 3
+  },
+  {
+    "Id": 4,
+    "cityId": 2,
+    "name": "Shibuya",
+    "line": "Yamanote Line",
+    "description": "Famous crossing and youth culture center",
+    "order": 1
+  },
+  {
+    "Id": 5,
+    "cityId": 2,
+    "name": "Shinjuku",
+    "line": "Yamanote Line",
+    "description": "Major transport hub with shopping and dining",
+    "order": 2
+  }
+]

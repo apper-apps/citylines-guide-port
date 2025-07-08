@@ -1,0 +1,50 @@
+[
+  {
+    "Id": 1,
+    "cityId": 1,
+    "stationId": 1,
+    "type": "attraction",
+    "title": "Marina Bay Sands",
+    "description": "Iconic hotel and casino complex with rooftop infinity pool",
+    "imageUrl": "",
+    "link": "https://marinabaysands.com",
+    "isFeatured": true,
+    "isSponsored": true
+  },
+  {
+    "Id": 2,
+    "cityId": 1,
+    "stationId": 1,
+    "type": "food",
+    "title": "Hawker Chan",
+    "description": "World's cheapest Michelin-starred meal",
+    "imageUrl": "",
+    "link": "",
+    "isFeatured": false,
+    "isSponsored": false
+  },
+  {
+    "Id": 3,
+    "cityId": 1,
+    "stationId": 2,
+    "type": "shopping",
+    "title": "ION Orchard",
+    "description": "Premium shopping mall in the heart of Orchard Road",
+    "imageUrl": "",
+    "link": "",
+    "isFeatured": true,
+    "isSponsored": true
+  },
+  {
+    "Id": 4,
+    "cityId": 2,
+    "stationId": 4,
+    "type": "attraction",
+    "title": "Shibuya Crossing",
+    "description": "World's busiest pedestrian crossing",
+    "imageUrl": "",
+    "link": "",
+    "isFeatured": true,
+    "isSponsored": false
+  }
+]

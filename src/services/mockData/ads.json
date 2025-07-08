@@ -1,0 +1,87 @@
+{
+  "totalRevenue": 1850,
+  "monthlyRevenue": 420,
+  "platformFee": 250,
+  "netRevenue": 1600,
+  "activeAds": [
+    {
+      "Id": 1,
+      "title": "Marina Bay Sands Banner",
+      "city": "Singapore",
+      "views": 25800,
+      "clicks": 420
+    },
+    {
+      "Id": 2,
+      "title": "Tokyo Hotels Ad",
+      "city": "Tokyo",
+      "views": 18600,
+      "clicks": 280
+    }
+  ],
+  "ads": [
+    {
+      "Id": 1,
+      "title": "Marina Bay Sands Banner",
+      "placement": "top",
+      "status": "active",
+      "views": 25800,
+      "clicks": 420,
+      "revenue": 850
+    },
+    {
+      "Id": 2,
+      "title": "Tokyo Hotels Ad",
+      "placement": "side",
+      "status": "active",
+      "views": 18600,
+      "clicks": 280,
+      "revenue": 650
+    },
+    {
+      "Id": 3,
+      "title": "London Tours Banner",
+      "placement": "bottom",
+      "status": "paused",
+      "views": 12400,
+      "clicks": 150,
+      "revenue": 350
+    }
+  ],
+  "revenueByCity": [
+    {
+      "name": "Singapore",
+      "revenue": 850,
+      "ads": 3,
+      "growth": 12
+    },
+    {
+      "name": "Tokyo",
+      "revenue": 650,
+      "ads": 2,
+      "growth": 8
+    },
+    {
+      "name": "London",
+      "revenue": 350,
+      "ads": 1,
+      "growth": -5
+    }
+  ],
+  "payouts": [
+    {
+      "Id": 1,
+      "period": "January 2024",
+      "amount": 1200,
+      "status": "paid",
+      "date": "2024-02-01"
+    },
+    {
+      "Id": 2,
+      "period": "February 2024",
+      "amount": 950,
+      "status": "pending",
+      "date": "2024-03-01"
+    }
+  ]
+}

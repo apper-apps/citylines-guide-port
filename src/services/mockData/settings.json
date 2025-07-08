@@ -1,0 +1,53 @@
+{
+  "user": {
+    "Id": 1,
+    "name": "John Chen",
+    "email": "john@example.com",
+    "company": "Travel Guide Co",
+    "website": "https://travelguide.com",
+    "subscriptionTier": "pro",
+    "subscriptionStatus": "active",
+    "emailVerified": true,
+    "createdAt": "2024-01-01T00:00:00Z"
+  },
+  "subscription": {
+    "price": 39,
+    "billingPeriod": "monthly",
+    "usage": {
+      "cities": 2,
+      "ads": 12,
+      "listings": 28
+    },
+    "limits": {
+      "cities": 3,
+      "ads": 25,
+      "listings": 50
+    }
+  },
+  "notifications": [
+    {
+      "id": 1,
+      "title": "New Ad Performance",
+      "description": "Get notified about ad performance updates",
+      "enabled": true
+    },
+    {
+      "id": 2,
+      "title": "Revenue Milestones",
+      "description": "Celebrate when you reach revenue goals",
+      "enabled": true
+    },
+    {
+      "id": 3,
+      "title": "City Updates",
+      "description": "Updates about your city directories",
+      "enabled": false
+    },
+    {
+      "id": 4,
+      "title": "Marketing Tips",
+      "description": "Tips to improve your directory performance",
+      "enabled": true
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "totalVisitors": 8500,
+  "pageViews": 24600,
+  "adClicks": 1280,
+  "revenue": 1850,
+  "chartData": {
+    "categories": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    "series": [
+      {
+        "name": "Visitors",
+        "data": [1200, 1800, 2100, 1900, 2400, 2800]
+      },
+      {
+        "name": "Revenue",
+        "data": [200, 350, 420, 380, 480, 520]
+      }
+    ]
+  },
+  "topCities": [
+    {
+      "name": "Singapore",
+      "visitors": 3200,
+      "revenue": 850,
+      "growth": 12
+    },
+    {
+      "name": "Tokyo",
+      "visitors": 2800,
+      "revenue": 650,
+      "growth": 8
+    },
+    {
+      "name": "London",
+      "visitors": 2500,
+      "revenue": 350,
+      "growth": -5
+    }
+  ],
+  "popularStations": [
+    {
+      "name": "Marina Bay",
+      "line": "Circle Line",
+      "views": 5200
+    },
+    {
+      "name": "Orchard",
+      "line": "North-South Line",
+      "views": 4800
+    },
+    {
+      "name": "Shibuya",
+      "line": "Yamanote Line",
+      "views": 4200
+    }
+  ],
+  "adPerformance": [
+    {
+      "Id": 1,
+      "title": "Marina Bay Sands",
+      "views": 25800,
+      "clicks": 420,
+      "ctr": 1.6,
+      "revenue": 850
+    },
+    {
+      "Id": 2,
+      "title": "Tokyo Hotels",
+      "views": 18600,
+      "clicks": 280,
+      "ctr": 1.5,
+      "revenue": 650
+    }
+  ],
+  "revenueTrends": [
+    {
+      "period": "This Month",
+      "revenue": 420,
+      "ads": 8,
+      "growth": 15
+    },
+    {
+      "period": "Last Month",
+      "revenue": 380,
+      "ads": 6,
+      "growth": 8
+    },
+    {
+      "period": "3 Months Ago",
+      "revenue": 350,
+      "ads": 5,
+      "growth": -2
+    }
+  ]
+}
