@@ -1,7 +1,9 @@
-import { toast } from 'react-toastify';
-import { cityService } from './cityService';
-import { stationService } from './stationService';
-import { listingService } from './listingService';
+import { toast } from "react-toastify";
+import React from "react";
+import Error from "@/components/ui/Error";
+import { stationService } from "@/services/api/stationService";
+import { cityService } from "@/services/api/cityService";
+import { listingService } from "@/services/api/listingService";
 
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -9,7 +11,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const directoryService = {
   async getBuilderData() {
     await delay(300);
-    try {
+try {
       // Fetch data from multiple services to build directory
       const [cities, stations, listings] = await Promise.all([
         cityService.getAll(),
@@ -44,9 +46,10 @@ export const directoryService = {
           description: listing.description,
           imageUrl: listing.image_url,
           link: listing.link,
-          isFeatured: listing.is_featured === "featured",
+isFeatured: listing.is_featured === "featured",
           isSponsored: listing.is_sponsored === "sponsored"
-        }))
+        })),
+        events: [] // Mock events data - would be replaced with actual event service
       };
     } catch (error) {
       console.error("Error fetching builder data:", error);
@@ -54,7 +57,8 @@ export const directoryService = {
       return {
         cities: [],
         stations: [],
-        listings: []
+        listings: [],
+        events: []
       };
     }
   },
@@ -218,6 +222,81 @@ export const directoryService = {
     } catch (error) {
       console.error("Error deleting item:", error);
       toast.error("Failed to delete item");
+      return { success: false, message: error.message };
+    }
+},
+
+  async deleteListing(id) {
+    await delay(300);
+    try {
+      const result = await listingService.delete(id);
+      if (result) {
+        toast.success('Listing deleted successfully');
+        return { success: true, type: 'listing' };
+      }
+      throw new Error('Listing not found');
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      toast.error("Failed to delete listing");
+      return { success: false, message: error.message };
+    }
+  },
+
+  async createEvent(eventData) {
+    await delay(500);
+    try {
+      // Mock event creation - would be replaced with actual event service
+      const mockEvent = {
+        Id: Date.now(),
+        title: eventData.title,
+        description: eventData.description,
+        eventDate: eventData.eventDate,
+        eventTime: eventData.eventTime,
+        stationId: eventData.stationId,
+        cityId: eventData.cityId
+      };
+      
+      toast.success('Event created successfully');
+      return mockEvent;
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast.error("Failed to create event");
+      return null;
+    }
+  },
+
+  async updateEvent(id, eventData) {
+    await delay(300);
+    try {
+      // Mock event update - would be replaced with actual event service
+      const mockEvent = {
+        Id: id,
+        title: eventData.title,
+        description: eventData.description,
+        eventDate: eventData.eventDate,
+        eventTime: eventData.eventTime,
+        stationId: eventData.stationId,
+        cityId: eventData.cityId
+      };
+      
+      toast.success('Event updated successfully');
+      return mockEvent;
+    } catch (error) {
+      console.error("Error updating event:", error);
+      toast.error("Failed to update event");
+      return null;
+    }
+  },
+
+  async deleteEvent(id) {
+    await delay(300);
+    try {
+      // Mock event deletion - would be replaced with actual event service
+      toast.success('Event deleted successfully');
+      return { success: true, type: 'event' };
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error("Failed to delete event");
       return { success: false, message: error.message };
     }
   }

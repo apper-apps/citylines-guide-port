@@ -20,22 +20,42 @@ const DirectoryBuilder = () => {
 const [activeTab, setActiveTab] = useState('stations');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStation, setEditingStation] = useState(null);
+  const [editingListing, setEditingListing] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [stationToDelete, setStationToDelete] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [events, setEvents] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
     line: '',
     description: '',
-    type: 'station'
+    type: 'attraction',
+    title: '',
+    imageUrl: '',
+    link: '',
+    stationId: '',
+    isFeatured: false,
+    isSponsored: false,
+    eventDate: '',
+    eventTime: ''
   });
 
-  const [editFormData, setEditFormData] = useState({
+const [editFormData, setEditFormData] = useState({
     name: '',
     line: '',
-    description: ''
+    description: '',
+    type: 'attraction',
+    title: '',
+    imageUrl: '',
+    link: '',
+    stationId: '',
+    isFeatured: false,
+    isSponsored: false,
+    eventDate: '',
+    eventTime: ''
   });
-  const loadData = async () => {
+const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -43,6 +63,7 @@ const [activeTab, setActiveTab] = useState('stations');
       setCities(data.cities);
       setStations(data.stations);
       setListings(data.listings);
+      setEvents(data.events || []);
       if (data.cities.length > 0) {
         setSelectedCity(data.cities[0]);
       }
@@ -76,24 +97,90 @@ const handleSubmit = async (e) => {
             cityId: selectedCity.Id
           });
         }
-        await loadData();
-      } else {
-        await directoryService.createListing({
-          ...formData,
-          cityId: selectedCity.Id
-        });
-        await loadData();
+      } else if (activeTab === 'listings') {
+        if (editingListing) {
+          // Update existing listing
+          await directoryService.updateListing(editingListing.Id, {
+            type: editFormData.type,
+            title: editFormData.title,
+            description: editFormData.description,
+            imageUrl: editFormData.imageUrl,
+            link: editFormData.link,
+            stationId: editFormData.stationId,
+            isFeatured: editFormData.isFeatured,
+            isSponsored: editFormData.isSponsored,
+            cityId: selectedCity.Id
+          });
+        } else {
+          // Create new listing
+          await directoryService.createListing({
+            ...formData,
+            cityId: selectedCity.Id
+          });
+        }
+      } else if (activeTab === 'events') {
+        if (editingEvent) {
+          // Update existing event
+          await directoryService.updateEvent(editingEvent.Id, {
+            title: editFormData.title,
+            description: editFormData.description,
+            eventDate: editFormData.eventDate,
+            eventTime: editFormData.eventTime,
+            stationId: editFormData.stationId,
+            cityId: selectedCity.Id
+          });
+        } else {
+          // Create new event
+          await directoryService.createEvent({
+            ...formData,
+            cityId: selectedCity.Id
+          });
+        }
       }
-      setFormData({ name: '', line: '', description: '', type: 'station' });
-      setEditFormData({ name: '', line: '', description: '' });
-      setEditingStation(null);
+      
+      await loadData();
+      resetForm();
       setShowAddForm(false);
     } catch (err) {
       setError(err.message);
     }
   };
 
-  const handleEdit = (station) => {
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      line: '',
+      description: '',
+      type: 'attraction',
+      title: '',
+      imageUrl: '',
+      link: '',
+      stationId: '',
+      isFeatured: false,
+      isSponsored: false,
+      eventDate: '',
+      eventTime: ''
+    });
+    setEditFormData({
+      name: '',
+      line: '',
+      description: '',
+      type: 'attraction',
+      title: '',
+      imageUrl: '',
+      link: '',
+      stationId: '',
+      isFeatured: false,
+      isSponsored: false,
+      eventDate: '',
+      eventTime: ''
+    });
+    setEditingStation(null);
+    setEditingListing(null);
+    setEditingEvent(null);
+  };
+
+const handleEditStation = (station) => {
     setEditingStation(station);
     setEditFormData({
       name: station.name,
@@ -103,28 +190,61 @@ const handleSubmit = async (e) => {
     setShowAddForm(true);
   };
 
-  const handleDelete = (station) => {
-    setStationToDelete(station);
+  const handleEditListing = (listing) => {
+    setEditingListing(listing);
+    setEditFormData({
+      type: listing.type,
+      title: listing.title,
+      description: listing.description,
+      imageUrl: listing.imageUrl,
+      link: listing.link,
+      stationId: listing.stationId,
+      isFeatured: listing.isFeatured,
+      isSponsored: listing.isSponsored
+    });
+    setShowAddForm(true);
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setEditFormData({
+      title: event.title,
+      description: event.description,
+      eventDate: event.eventDate,
+      eventTime: event.eventTime,
+      stationId: event.stationId
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDelete = (item) => {
+    setItemToDelete(item);
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = async () => {
-    if (stationToDelete) {
+const confirmDelete = async () => {
+    if (itemToDelete) {
       try {
-        await directoryService.delete(stationToDelete.Id);
+        if (activeTab === 'stations') {
+          await directoryService.delete(itemToDelete.Id);
+        } else if (activeTab === 'listings') {
+          await directoryService.deleteListing(itemToDelete.Id);
+        } else if (activeTab === 'events') {
+          await directoryService.deleteEvent(itemToDelete.Id);
+        }
         await loadData();
       } catch (err) {
         setError(err.message);
       }
     }
     setShowDeleteConfirm(false);
-    setStationToDelete(null);
+    setItemToDelete(null);
   };
 
-  const tabs = [
+const tabs = [
     { id: 'stations', label: 'MRT Stations', icon: 'MapPin' },
     { id: 'listings', label: 'Listings', icon: 'Star' },
-    { id: 'settings', label: 'Settings', icon: 'Settings' }
+    { id: 'events', label: 'Events', icon: 'Calendar' }
   ];
 
   if (loading) return <Loading />;
@@ -149,9 +269,9 @@ const handleSubmit = async (e) => {
           <h1 className="text-2xl font-bold text-gray-900">Directory Builder</h1>
           <p className="text-gray-600">Build and manage your city's transit directory</p>
         </div>
-        <Button onClick={() => setShowAddForm(true)}>
+<Button onClick={() => setShowAddForm(true)}>
           <ApperIcon name="Plus" className="w-4 h-4 mr-2" />
-          Add {activeTab === 'stations' ? 'Station' : 'Listing'}
+          Add {activeTab === 'stations' ? 'Station' : activeTab === 'listings' ? 'Listing' : 'Event'}
         </Button>
       </div>
 
@@ -224,9 +344,9 @@ const handleSubmit = async (e) => {
                     <div className="flex space-x-2">
                       <Button 
                         variant="outline" 
-                        size="sm" 
+size="sm" 
                         className="flex-1"
-                        onClick={() => handleEdit(station)}
+                        onClick={() => handleEditStation(station)}
                       >
                         <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
                         Edit
@@ -272,12 +392,70 @@ const handleSubmit = async (e) => {
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-700">{listing.description}</p>
+<div className="flex space-x-2">
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="flex-1"
+                         onClick={() => handleEditListing(listing)}
+                       >
+                         <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
+                         Edit
+                       </Button>
+                       <Button 
+                         variant="outline" 
+                         size="sm"
+                         onClick={() => handleDelete(listing)}
+                       >
+                         <ApperIcon name="Trash" className="w-4 h-4" />
+                       </Button>
+                     </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+)}
+
+      {activeTab === 'events' && (
+        <div className="space-y-4">
+          {events.length === 0 ? (
+            <Empty
+              title="No events added"
+              message="Add events and activities happening around your city's transit stations."
+              actionLabel="Add Event"
+              onAction={() => setShowAddForm(true)}
+              icon="Calendar"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {events.map(event => (
+                <Card key={event.Id} className="hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{event.title}</h3>
+                        <p className="text-sm text-gray-600">{event.eventDate} at {event.eventTime}</p>
+                      </div>
+                      <Badge variant="secondary">Event</Badge>
+                    </div>
+                    <p className="text-sm text-gray-700">{event.description}</p>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEditEvent(event)}
+                      >
                         <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(event)}
+                      >
                         <ApperIcon name="Trash" className="w-4 h-4" />
                       </Button>
                     </div>
@@ -303,57 +481,256 @@ const handleSubmit = async (e) => {
           >
 <form onSubmit={handleSubmit} className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingStation ? 'Edit' : 'Add'} {activeTab === 'stations' ? 'Station' : 'Listing'}
-                </h2>
+<h2 className="text-xl font-semibold text-gray-900">
+                   {(editingStation || editingListing || editingEvent) ? 'Edit' : 'Add'} {
+                     activeTab === 'stations' ? 'Station' : 
+                     activeTab === 'listings' ? 'Listing' : 'Event'
+                   }
+                 </h2>
                 <button
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingStation(null);
-                    setEditFormData({ name: '', line: '', description: '' });
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-md"
-                >
-                  <ApperIcon name="X" className="w-5 h-5" />
-                </button>
+                   onClick={() => {
+                     setShowAddForm(false);
+                     resetForm();
+                   }}
+                   className="p-2 hover:bg-gray-100 rounded-md"
+                 >
+                   <ApperIcon name="X" className="w-5 h-5" />
+                 </button>
               </div>
 <div className="space-y-4">
-                <Input
-                  label="Name"
-                  value={editingStation ? editFormData.name : formData.name}
-                  onChange={(e) => {
-                    if (editingStation) {
-                      setEditFormData({ ...editFormData, name: e.target.value });
-                    } else {
-                      setFormData({ ...formData, name: e.target.value });
-                    }
-                  }}
-                  required
-                />
-                
                 {activeTab === 'stations' && (
-                  <Input
-                    label="Line"
-                    value={editingStation ? editFormData.line : formData.line}
-                    onChange={(e) => {
-                      if (editingStation) {
-                        setEditFormData({ ...editFormData, line: e.target.value });
-                      } else {
-                        setFormData({ ...formData, line: e.target.value });
-                      }
-                    }}
-                    required
-                  />
+                  <>
+                    <Input
+                      label="Station Name"
+                      value={editingStation ? editFormData.name : formData.name}
+                      onChange={(e) => {
+                        if (editingStation) {
+                          setEditFormData({ ...editFormData, name: e.target.value });
+                        } else {
+                          setFormData({ ...formData, name: e.target.value });
+                        }
+                      }}
+                      required
+                    />
+                    <Input
+                      label="Line"
+                      value={editingStation ? editFormData.line : formData.line}
+                      onChange={(e) => {
+                        if (editingStation) {
+                          setEditFormData({ ...editFormData, line: e.target.value });
+                        } else {
+                          setFormData({ ...formData, line: e.target.value });
+                        }
+                      }}
+                      required
+                    />
+                  </>
                 )}
 
-                <div>
+                {activeTab === 'listings' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Listing Type
+                      </label>
+                      <select
+                        value={editingListing ? editFormData.type : formData.type}
+                        onChange={(e) => {
+                          if (editingListing) {
+                            setEditFormData({ ...editFormData, type: e.target.value });
+                          } else {
+                            setFormData({ ...formData, type: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                      >
+                        <option value="attraction">Tourist Attraction</option>
+                        <option value="food">Food & Dining</option>
+                        <option value="shopping">Shopping</option>
+                      </select>
+                    </div>
+                    <Input
+                      label="Title"
+                      value={editingListing ? editFormData.title : formData.title}
+                      onChange={(e) => {
+                        if (editingListing) {
+                          setEditFormData({ ...editFormData, title: e.target.value });
+                        } else {
+                          setFormData({ ...formData, title: e.target.value });
+                        }
+                      }}
+                      required
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nearest Station
+                      </label>
+                      <select
+                        value={editingListing ? editFormData.stationId : formData.stationId}
+                        onChange={(e) => {
+                          if (editingListing) {
+                            setEditFormData({ ...editFormData, stationId: e.target.value });
+                          } else {
+                            setFormData({ ...formData, stationId: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Select a station</option>
+                        {stations.map(station => (
+                          <option key={station.Id} value={station.Id}>
+                            {station.name} - {station.line}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Input
+                      label="Image URL"
+                      value={editingListing ? editFormData.imageUrl : formData.imageUrl}
+                      onChange={(e) => {
+                        if (editingListing) {
+                          setEditFormData({ ...editFormData, imageUrl: e.target.value });
+                        } else {
+                          setFormData({ ...formData, imageUrl: e.target.value });
+                        }
+                      }}
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    <Input
+                      label="Website Link"
+                      value={editingListing ? editFormData.link : formData.link}
+                      onChange={(e) => {
+                        if (editingListing) {
+                          setEditFormData({ ...editFormData, link: e.target.value });
+                        } else {
+                          setFormData({ ...formData, link: e.target.value });
+                        }
+                      }}
+                      type="url"
+                      placeholder="https://example.com"
+                    />
+                    <div className="flex space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={editingListing ? editFormData.isFeatured : formData.isFeatured}
+                          onChange={(e) => {
+                            if (editingListing) {
+                              setEditFormData({ ...editFormData, isFeatured: e.target.checked });
+                            } else {
+                              setFormData({ ...formData, isFeatured: e.target.checked });
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">Featured</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={editingListing ? editFormData.isSponsored : formData.isSponsored}
+                          onChange={(e) => {
+                            if (editingListing) {
+                              setEditFormData({ ...editFormData, isSponsored: e.target.checked });
+                            } else {
+                              setFormData({ ...formData, isSponsored: e.target.checked });
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">Sponsored</span>
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'events' && (
+                  <>
+                    <Input
+                      label="Event Title"
+                      value={editingEvent ? editFormData.title : formData.title}
+                      onChange={(e) => {
+                        if (editingEvent) {
+                          setEditFormData({ ...editFormData, title: e.target.value });
+                        } else {
+                          setFormData({ ...formData, title: e.target.value });
+                        }
+                      }}
+                      required
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Station Location
+                      </label>
+                      <select
+                        value={editingEvent ? editFormData.stationId : formData.stationId}
+                        onChange={(e) => {
+                          if (editingEvent) {
+                            setEditFormData({ ...editFormData, stationId: e.target.value });
+                          } else {
+                            setFormData({ ...formData, stationId: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Select a station</option>
+                        {stations.map(station => (
+                          <option key={station.Id} value={station.Id}>
+                            {station.name} - {station.line}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="Event Date"
+                        type="date"
+                        value={editingEvent ? editFormData.eventDate : formData.eventDate}
+                        onChange={(e) => {
+                          if (editingEvent) {
+                            setEditFormData({ ...editFormData, eventDate: e.target.value });
+                          } else {
+                            setFormData({ ...formData, eventDate: e.target.value });
+                          }
+                        }}
+                        required
+                      />
+                      <Input
+                        label="Event Time"
+                        type="time"
+                        value={editingEvent ? editFormData.eventTime : formData.eventTime}
+                        onChange={(e) => {
+                          if (editingEvent) {
+                            setEditFormData({ ...editFormData, eventTime: e.target.value });
+                          } else {
+                            setFormData({ ...formData, eventTime: e.target.value });
+                          }
+                        }}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
+<div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
-</label>
+                  </label>
                   <textarea
-                    value={editingStation ? editFormData.description : formData.description}
+                    value={
+                      editingStation ? editFormData.description : 
+                      editingListing ? editFormData.description :
+                      editingEvent ? editFormData.description :
+                      formData.description
+                    }
                     onChange={(e) => {
                       if (editingStation) {
+                        setEditFormData({ ...editFormData, description: e.target.value });
+                      } else if (editingListing) {
+                        setEditFormData({ ...editFormData, description: e.target.value });
+                      } else if (editingEvent) {
                         setEditFormData({ ...editFormData, description: e.target.value });
                       } else {
                         setFormData({ ...formData, description: e.target.value });
@@ -369,15 +746,17 @@ const handleSubmit = async (e) => {
                     variant="outline"
                     onClick={() => {
                       setShowAddForm(false);
-                      setEditingStation(null);
-                      setEditFormData({ name: '', line: '', description: '' });
+                      resetForm();
                     }}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button type="submit" className="flex-1">
-                    {editingStation ? 'Update' : 'Add'} {activeTab === 'stations' ? 'Station' : 'Listing'}
+                    {(editingStation || editingListing || editingEvent) ? 'Update' : 'Add'} {
+                      activeTab === 'stations' ? 'Station' : 
+                      activeTab === 'listings' ? 'Listing' : 'Event'
+                    }
                   </Button>
                 </div>
               </div>
@@ -407,8 +786,8 @@ const handleSubmit = async (e) => {
                 <ApperIcon name="X" className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete "{stationToDelete?.name}"? This action cannot be undone.
+<p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{itemToDelete?.name || itemToDelete?.title}"? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <Button
