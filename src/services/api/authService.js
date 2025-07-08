@@ -86,7 +86,7 @@ export const authService = {
       throw new Error('An account with this email already exists');
     }
     
-    // Create new user
+// Create new user
     const newUser = {
       Id: getNextId(),
       name: name.trim(),
@@ -94,6 +94,8 @@ export const authService = {
       password: password,
       emailVerified: false,
       subscriptionTier: 'starter',
+      billingPeriod: 'monthly',
+      subscriptionUpdatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       lastLogin: null,
       verificationToken: this.generateToken()

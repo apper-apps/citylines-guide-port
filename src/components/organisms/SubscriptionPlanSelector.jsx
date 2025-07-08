@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Card from '@/components/atoms/Card';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Card from "@/components/atoms/Card";
 
 const SubscriptionPlanSelector = ({ currentPlan, onPlanChange }) => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
@@ -72,6 +72,14 @@ const SubscriptionPlanSelector = ({ currentPlan, onPlanChange }) => {
       accent: isSelected ? 'border-accent bg-amber-50' : 'border-gray-200 hover:border-amber-300'
     };
     return colors[color] || colors.primary;
+};
+
+const handlePlanChange = (planName) => {
+    if (currentPlan === planName) return;
+    
+    if (onPlanChange) {
+      onPlanChange(planName);
+    }
   };
 
   return (
@@ -143,9 +151,9 @@ const SubscriptionPlanSelector = ({ currentPlan, onPlanChange }) => {
                   ))}
                 </ul>
 
-                <Button
+<Button
                   variant={currentPlan === plan.name.toLowerCase() ? 'outline' : plan.color}
-                  onClick={() => onPlanChange(plan.name.toLowerCase())}
+                  onClick={() => handlePlanChange(plan.name.toLowerCase())}
                   className="w-full"
                 >
                   {currentPlan === plan.name.toLowerCase() ? 'Current Plan' : 'Choose Plan'}

@@ -102,6 +102,29 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
+const updateSubscription = async (planId, billingPeriod = 'monthly') => {
+    try {
+      const users = JSON.parse(localStorage.getItem('citylines_users') || '[]');
+      const userIndex = users.findIndex(u => u.Id === user.Id);
+      
+      if (userIndex !== -1) {
+        users[userIndex].subscriptionTier = planId;
+        users[userIndex].billingPeriod = billingPeriod;
+        users[userIndex].subscriptionUpdatedAt = new Date().toISOString();
+        
+        localStorage.setItem('citylines_users', JSON.stringify(users));
+        
+        const updatedUser = { ...users[userIndex] };
+        delete updatedUser.password;
+        setUser(updatedUser);
+        localStorage.setItem('citylines_auth_user', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      toast.error('Failed to update subscription');
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -111,7 +134,8 @@ export const AuthContextProvider = ({ children }) => {
     forgotPassword,
     resetPassword,
     verifyEmail,
-    checkAuthStatus
+    checkAuthStatus,
+    updateSubscription
   };
 
   return (
