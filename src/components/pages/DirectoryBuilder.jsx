@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { touristAttractionService } from "@/services/api/touristAttractionService";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
@@ -23,8 +24,9 @@ const [activeTab, setActiveTab] = useState('stations');
   const [editingListing, setEditingListing] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [events, setEvents] = useState([]);
+const [itemToDelete, setItemToDelete] = useState(null);
+const [events, setEvents] = useState([]);
+const [touristAttractions, setTouristAttractions] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -37,11 +39,12 @@ const [activeTab, setActiveTab] = useState('stations');
     stationId: '',
     isFeatured: false,
     isSponsored: false,
-    eventDate: '',
+eventDate: '',
     eventTime: ''
   });
 
-const [editFormData, setEditFormData] = useState({
+  const [editingTouristAttraction, setEditingTouristAttraction] = useState(null);
+  const [editFormData, setEditFormData] = useState({
     name: '',
     line: '',
     description: '',
@@ -54,8 +57,9 @@ const [editFormData, setEditFormData] = useState({
     isSponsored: false,
     eventDate: '',
     eventTime: ''
-  });
-const loadData = async () => {
+});
+
+  const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -64,6 +68,11 @@ const loadData = async () => {
       setStations(data.stations);
       setListings(data.listings);
       setEvents(data.events || []);
+      
+      // Load tourist attractions
+      const attractionsData = await touristAttractionService.getAll();
+      setTouristAttractions(attractionsData);
+      
       if (data.cities.length > 0) {
         setSelectedCity(data.cities[0]);
       }
@@ -76,9 +85,9 @@ const loadData = async () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+}, []);
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (activeTab === 'stations') {
@@ -136,6 +145,24 @@ const handleSubmit = async (e) => {
             cityId: selectedCity.Id
           });
         }
+      } else if (activeTab === 'touristAttractions') {
+        if (editingTouristAttraction) {
+          // Update existing tourist attraction
+          await touristAttractionService.update(editingTouristAttraction.Id, {
+            Name: editFormData.name,
+            description: editFormData.description,
+            imageUrl: editFormData.imageUrl,
+            station: editFormData.stationId
+          });
+        } else {
+          // Create new tourist attraction
+          await touristAttractionService.create({
+            Name: formData.name,
+            description: formData.description,
+            imageUrl: formData.imageUrl,
+            station: formData.stationId
+          });
+        }
       }
       
       await loadData();
@@ -172,15 +199,16 @@ const handleSubmit = async (e) => {
       stationId: '',
       isFeatured: false,
       isSponsored: false,
-      eventDate: '',
+eventDate: '',
       eventTime: ''
     });
     setEditingStation(null);
     setEditingListing(null);
     setEditingEvent(null);
+    setEditingTouristAttraction(null);
   };
 
-const handleEditStation = (station) => {
+  const handleEditStation = (station) => {
     setEditingStation(station);
     setEditFormData({
       name: station.name,
@@ -212,7 +240,18 @@ const handleEditStation = (station) => {
       description: event.description,
       eventDate: event.eventDate,
       eventTime: event.eventTime,
-      stationId: event.stationId
+stationId: event.stationId
+    });
+    setShowAddForm(true);
+  };
+
+  const handleEditTouristAttraction = (attraction) => {
+    setEditingTouristAttraction(attraction);
+    setEditFormData({
+      name: attraction.Name,
+      description: attraction.description,
+      imageUrl: attraction.imageUrl,
+      stationId: attraction.station?.Id
     });
     setShowAddForm(true);
   };
@@ -221,7 +260,6 @@ const handleEditStation = (station) => {
     setItemToDelete(item);
     setShowDeleteConfirm(true);
   };
-
 const confirmDelete = async () => {
     if (itemToDelete) {
       try {
@@ -231,6 +269,8 @@ const confirmDelete = async () => {
           await directoryService.deleteListing(itemToDelete.Id);
         } else if (activeTab === 'events') {
           await directoryService.deleteEvent(itemToDelete.Id);
+        } else if (activeTab === 'touristAttractions') {
+          await touristAttractionService.delete(itemToDelete.Id);
         }
         await loadData();
       } catch (err) {
@@ -240,12 +280,13 @@ const confirmDelete = async () => {
     setShowDeleteConfirm(false);
     setItemToDelete(null);
   };
+};
 
-const tabs = [
+  const tabs = [
     { id: 'stations', label: 'MRT Stations', icon: 'MapPin' },
     { id: 'listings', label: 'Listings', icon: 'Star' },
-    { id: 'events', label: 'Events', icon: 'Calendar' }
-  ];
+    { id: 'events', label: 'Events', icon: 'Calendar' },
+    { id: 'touristAttractions', label: 'Tourist Attractions', icon: 'Landmark' }
 
   if (loading) return <Loading />;
   if (error) return <Error onRetry={loadData} />;
@@ -268,13 +309,12 @@ const tabs = [
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Directory Builder</h1>
           <p className="text-gray-600">Build and manage your city's transit directory</p>
-        </div>
-<Button onClick={() => setShowAddForm(true)}>
+</div>
+        <Button onClick={() => setShowAddForm(true)}>
           <ApperIcon name="Plus" className="w-4 h-4 mr-2" />
-          Add {activeTab === 'stations' ? 'Station' : activeTab === 'listings' ? 'Listing' : 'Event'}
+          Add {activeTab === 'stations' ? 'Station' : activeTab === 'listings' ? 'Listing' : activeTab === 'events' ? 'Event' : 'Tourist Attraction'}
         </Button>
       </div>
-
       {/* City Selector */}
       <Card>
         <div className="flex items-center justify-between">
@@ -339,12 +379,12 @@ const tabs = [
                         <p className="text-sm text-gray-600">{station.line}</p>
                       </div>
                       <Badge variant="primary">{station.line}</Badge>
-                    </div>
-<p className="text-sm text-gray-700">{station.description}</p>
+</div>
+                    <p className="text-sm text-gray-700">{station.description}</p>
                     <div className="flex space-x-2">
                       <Button 
                         variant="outline" 
-size="sm" 
+                        size="sm" 
                         className="flex-1"
                         onClick={() => handleEditStation(station)}
                       >
@@ -390,13 +430,13 @@ size="sm"
                       <Badge variant={listing.isSponsored ? 'accent' : 'default'}>
                         {listing.isSponsored ? 'Sponsored' : 'Free'}
                       </Badge>
-                    </div>
+</div>
                     <p className="text-sm text-gray-700">{listing.description}</p>
-<div className="flex space-x-2">
-                       <Button 
-                         variant="outline" 
-                         size="sm" 
-                         className="flex-1"
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
                          onClick={() => handleEditListing(listing)}
                        >
                          <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
@@ -408,16 +448,15 @@ size="sm"
                          onClick={() => handleDelete(listing)}
                        >
                          <ApperIcon name="Trash" className="w-4 h-4" />
-                       </Button>
-                     </div>
+</Button>
+                    </div>
                   </div>
                 </Card>
               ))}
             </div>
           )}
         </div>
-)}
-
+      )}
       {activeTab === 'events' && (
         <div className="space-y-4">
           {events.length === 0 ? (
@@ -467,6 +506,55 @@ size="sm"
         </div>
       )}
 
+      {activeTab === 'touristAttractions' && (
+        <div className="space-y-4">
+          {touristAttractions.length === 0 ? (
+            <Empty
+              title="No tourist attractions added"
+              message="Add tourist attractions to help visitors discover your city's best spots."
+              actionLabel="Add Tourist Attraction"
+              onAction={() => setShowAddForm(true)}
+              icon="Landmark"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {touristAttractions.map(attraction => (
+                <Card key={attraction.Id} className="hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{attraction.Name}</h3>
+                        <p className="text-sm text-gray-600">{attraction.station?.Name}</p>
+                      </div>
+                      <Badge variant="accent">Attraction</Badge>
+                    </div>
+                    <p className="text-sm text-gray-700">{attraction.description}</p>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEditTouristAttraction(attraction)}
+                      >
+                        <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(attraction)}
+                      >
+                        <ApperIcon name="Trash" className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+</div>
+          )}
+        </div>
+      )}
+
       {/* Add Form Modal */}
       {showAddForm && (
         <motion.div
@@ -477,16 +565,17 @@ size="sm"
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-lg max-w-md w-full"
+className="bg-white rounded-lg max-w-md w-full"
           >
-<form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={handleSubmit} className="p-6">
               <div className="flex items-center justify-between mb-6">
-<h2 className="text-xl font-semibold text-gray-900">
-                   {(editingStation || editingListing || editingEvent) ? 'Edit' : 'Add'} {
-                     activeTab === 'stations' ? 'Station' : 
-                     activeTab === 'listings' ? 'Listing' : 'Event'
-                   }
-                 </h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {(editingStation || editingListing || editingEvent || editingTouristAttraction) ? 'Edit' : 'Add'} {
+                    activeTab === 'stations' ? 'Station' :
+                    activeTab === 'listings' ? 'Listing' : 
+                    activeTab === 'events' ? 'Event' : 'Tourist Attraction'
+                  }
+                </h2>
                 <button
                    onClick={() => {
                      setShowAddForm(false);
@@ -495,9 +584,9 @@ size="sm"
                    className="p-2 hover:bg-gray-100 rounded-md"
                  >
                    <ApperIcon name="X" className="w-5 h-5" />
-                 </button>
+</button>
               </div>
-<div className="space-y-4">
+              <div className="space-y-4">
                 {activeTab === 'stations' && (
                   <>
                     <Input
@@ -708,8 +797,61 @@ size="sm"
                             setFormData({ ...formData, eventTime: e.target.value });
                           }
                         }}
-                        required
+required
                       />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'touristAttractions' && (
+                  <>
+                    <Input
+                      label="Attraction Name"
+                      value={editingTouristAttraction ? editFormData.name : formData.name}
+                      onChange={(e) => {
+                        if (editingTouristAttraction) {
+                          setEditFormData({ ...editFormData, name: e.target.value });
+                        } else {
+                          setFormData({ ...formData, name: e.target.value });
+                        }
+                      }}
+                      required
+                    />
+                    <Input
+                      label="Image URL"
+                      value={editingTouristAttraction ? editFormData.imageUrl : formData.imageUrl}
+                      onChange={(e) => {
+                        if (editingTouristAttraction) {
+                          setEditFormData({ ...editFormData, imageUrl: e.target.value });
+                        } else {
+                          setFormData({ ...formData, imageUrl: e.target.value });
+                        }
+                      }}
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nearest Station
+                      </label>
+                      <select
+                        value={editingTouristAttraction ? editFormData.stationId : formData.stationId}
+                        onChange={(e) => {
+                          if (editingTouristAttraction) {
+                            setEditFormData({ ...editFormData, stationId: e.target.value });
+                          } else {
+                            setFormData({ ...formData, stationId: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Select a station</option>
+                        {stations.map(station => (
+                          <option key={station.Id} value={station.Id}>
+                            {station.name} - {station.line}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </>
                 )}
@@ -723,6 +865,7 @@ size="sm"
                       editingStation ? editFormData.description : 
                       editingListing ? editFormData.description :
                       editingEvent ? editFormData.description :
+                      editingTouristAttraction ? editFormData.description :
                       formData.description
                     }
                     onChange={(e) => {
@@ -732,6 +875,8 @@ size="sm"
                         setEditFormData({ ...editFormData, description: e.target.value });
                       } else if (editingEvent) {
                         setEditFormData({ ...editFormData, description: e.target.value });
+                      } else if (editingTouristAttraction) {
+                        setEditFormData({ ...editFormData, description: e.target.value });
                       } else {
                         setFormData({ ...formData, description: e.target.value });
                       }
@@ -739,9 +884,9 @@ size="sm"
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   />
-                </div>
+</div>
 
-<div className="flex space-x-3">
+                <div className="flex space-x-3">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -750,17 +895,18 @@ size="sm"
                     }}
                     className="flex-1"
                   >
-                    Cancel
+Cancel
                   </Button>
                   <Button type="submit" className="flex-1">
-                    {(editingStation || editingListing || editingEvent) ? 'Update' : 'Add'} {
+                    {(editingStation || editingListing || editingEvent || editingTouristAttraction) ? 'Update' : 'Add'} {
                       activeTab === 'stations' ? 'Station' : 
-                      activeTab === 'listings' ? 'Listing' : 'Event'
+                      activeTab === 'listings' ? 'Listing' : 
+                      activeTab === 'events' ? 'Event' : 'Tourist Attraction'
                     }
-                  </Button>
+</Button>
                 </div>
               </div>
-</form>
+            </form>
           </motion.div>
         </motion.div>
       )}
@@ -784,10 +930,10 @@ size="sm"
                 className="p-2 hover:bg-gray-100 rounded-md"
               >
                 <ApperIcon name="X" className="w-5 h-5" />
-              </button>
+</button>
             </div>
-<p className="text-gray-600 mb-6">
-              Are you sure you want to delete "{itemToDelete?.name || itemToDelete?.title}"? This action cannot be undone.
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{itemToDelete?.name || itemToDelete?.title || itemToDelete?.Name}"? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <Button
