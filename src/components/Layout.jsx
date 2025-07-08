@@ -6,19 +6,22 @@ import Sidebar from '@/components/organisms/Sidebar';
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Mock user data
+// Mock user data - enhanced with role-based permissions
   const user = {
     name: "John Chen",
     email: "john@example.com",
     subscriptionTier: "pro",
-    role: "user"
+    role: "admin", // Enhanced for admin capabilities
+    userId: 1
   };
 
+  // Current city context for multi-tenant system
   const currentCity = {
     name: "Singapore",
-    subdomain: "singapore"
+    subdomain: "singapore",
+    Id: 1,
+    status: "active"
   };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header

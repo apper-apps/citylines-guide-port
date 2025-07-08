@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import Card from '@/components/atoms/Card';
@@ -9,6 +10,7 @@ import SearchBar from '@/components/molecules/SearchBar';
 import Loading from '@/components/ui/Loading';
 import Error from '@/components/ui/Error';
 import { adminService } from '@/services/api/adminService';
+import { cityService } from '@/services/api/cityService';
 
 const AdminPanel = () => {
   const [data, setData] = useState(null);
@@ -29,9 +31,23 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
     loadData();
   }, []);
+
+  const handleReleaseCity = async (cityId, cityName) => {
+    if (!confirm(`Are you sure you want to release "${cityName}"? This action cannot be undone and will make the subdomain available for other users to claim.`)) {
+      return;
+    }
+
+    try {
+      await cityService.releaseCity(cityId);
+      toast.success(`Successfully released ${cityName}. The subdomain is now available for others to claim.`);
+      await loadData(); // Reload admin data
+    } catch (error) {
+      toast.error(error.message || `Failed to release ${cityName}`);
+    }
+  };
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'BarChart3' },
@@ -278,16 +294,30 @@ const AdminPanel = () => {
                           {city.status}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">
+<td className="py-3 px-4">
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(`https://${city.subdomain}.citylinesguide.com`, '_blank')}
+                            title="View site"
+                          >
                             <ApperIcon name="ExternalLink" className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            title="City settings"
+                          >
                             <ApperIcon name="Settings" className="w-4 h-4" />
                           </Button>
-                          <Button variant="danger" size="sm">
-                            <ApperIcon name="Trash" className="w-4 h-4" />
+                          <Button 
+                            variant="warning" 
+                            size="sm"
+                            onClick={() => handleReleaseCity(city.Id, city.name)}
+                            title="Release city claim"
+                          >
+                            <ApperIcon name="Unlock" className="w-4 h-4" />
                           </Button>
                         </div>
                       </td>
