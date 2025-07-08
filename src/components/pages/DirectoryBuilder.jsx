@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { touristAttractionService } from "@/services/api/touristAttractionService";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
@@ -9,6 +8,7 @@ import Input from "@/components/atoms/Input";
 import Empty from "@/components/ui/Empty";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
+import { touristAttractionService } from "@/services/api/touristAttractionService";
 import { directoryService } from "@/services/api/directoryService";
 
 const DirectoryBuilder = () => {
@@ -277,17 +277,16 @@ const confirmDelete = async () => {
         setError(err.message);
       }
     }
-    setShowDeleteConfirm(false);
+setShowDeleteConfirm(false);
     setItemToDelete(null);
   };
-};
 
-  const tabs = [
+const tabs = [
     { id: 'stations', label: 'MRT Stations', icon: 'MapPin' },
     { id: 'listings', label: 'Listings', icon: 'Star' },
     { id: 'events', label: 'Events', icon: 'Calendar' },
     { id: 'touristAttractions', label: 'Tourist Attractions', icon: 'Landmark' }
-
+  ];
   if (loading) return <Loading />;
   if (error) return <Error onRetry={loadData} />;
 
