@@ -18,16 +18,16 @@ const DirectoryBuilder = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-const [activeTab, setActiveTab] = useState('stations');
+  const [activeTab, setActiveTab] = useState('stations');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStation, setEditingStation] = useState(null);
   const [editingListing, setEditingListing] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-const [itemToDelete, setItemToDelete] = useState(null);
-const [events, setEvents] = useState([]);
-const [touristAttractions, setTouristAttractions] = useState([]);
-
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [touristAttractions, setTouristAttractions] = useState([]);
+  const [selectedContentType, setSelectedContentType] = useState('all');
   const [formData, setFormData] = useState({
     name: '',
     line: '',
@@ -283,10 +283,15 @@ setShowDeleteConfirm(false);
 
 const tabs = [
     { id: 'stations', label: 'MRT Stations', icon: 'MapPin' },
-    { id: 'listings', label: 'Listings', icon: 'Star' },
+    { id: 'listings', label: 'Food & Shopping', icon: 'ShoppingBag' },
     { id: 'events', label: 'Events', icon: 'Calendar' },
     { id: 'touristAttractions', label: 'Tourist Attractions', icon: 'Landmark' }
   ];
+// Filter listings based on selected content type
+  const filteredListings = selectedContentType === 'all' 
+    ? listings.filter(listing => listing.type === 'food' || listing.type === 'shopping')
+    : listings.filter(listing => listing.type === selectedContentType);
+
   if (loading) return <Loading />;
   if (error) return <Error onRetry={loadData} />;
 
@@ -304,14 +309,15 @@ const tabs = [
 
   return (
     <div className="space-y-6">
+<div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Directory Builder</h1>
-          <p className="text-gray-600">Build and manage your city's transit directory</p>
-</div>
+          <h1 className="text-2xl font-bold text-gray-900">Content Editor</h1>
+          <p className="text-gray-600">Manage your city's food, shopping, and transit content</p>
+        </div>
         <Button onClick={() => setShowAddForm(true)}>
           <ApperIcon name="Plus" className="w-4 h-4 mr-2" />
-          Add {activeTab === 'stations' ? 'Station' : activeTab === 'listings' ? 'Listing' : activeTab === 'events' ? 'Event' : 'Tourist Attraction'}
+          Add {activeTab === 'stations' ? 'Station' : activeTab === 'listings' ? 'Content' : activeTab === 'events' ? 'Event' : 'Tourist Attraction'}
         </Button>
       </div>
       {/* City Selector */}
@@ -406,48 +412,88 @@ const tabs = [
         </div>
       )}
 
-      {activeTab === 'listings' && (
+{activeTab === 'listings' && (
         <div className="space-y-4">
-          {listings.length === 0 ? (
+          {/* Content Type Filter */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button 
+              variant={!selectedContentType || selectedContentType === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedContentType('all')}
+            >
+              All Content
+            </Button>
+            <Button 
+              variant={selectedContentType === 'food' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedContentType('food')}
+            >
+              <ApperIcon name="UtensilsCrossed" className="w-4 h-4 mr-2" />
+              Food & Dining
+            </Button>
+            <Button 
+              variant={selectedContentType === 'shopping' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedContentType('shopping')}
+            >
+              <ApperIcon name="ShoppingCart" className="w-4 h-4 mr-2" />
+              Shopping
+            </Button>
+          </div>
+
+          {filteredListings.length === 0 ? (
             <Empty
-              title="No listings added"
-              message="Add attractions, restaurants, and shops to your directory."
-              actionLabel="Add Listing"
+              title="No content added"
+              message="Add food establishments and shopping venues to your directory."
+              actionLabel="Add Content"
               onAction={() => setShowAddForm(true)}
-              icon="Star"
+              icon="ShoppingBag"
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {listings.map(listing => (
+              {filteredListings.map(listing => (
                 <Card key={listing.Id} className="hover:shadow-md transition-shadow">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">{listing.title}</h3>
-                        <p className="text-sm text-gray-600">{listing.type}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={listing.type === 'food' ? 'secondary' : 'accent'}>
+                            {listing.type === 'food' ? 'Food & Dining' : 'Shopping'}
+                          </Badge>
+                          {listing.isSponsored && (
+                            <Badge variant="warning">Sponsored</Badge>
+                          )}
+                          {listing.isFeatured && (
+                            <Badge variant="default">Featured</Badge>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant={listing.isSponsored ? 'accent' : 'default'}>
-                        {listing.isSponsored ? 'Sponsored' : 'Free'}
-                      </Badge>
-</div>
-                    <p className="text-sm text-gray-700">{listing.description}</p>
+                    </div>
+                    <p className="text-sm text-gray-700 line-clamp-2">{listing.description}</p>
+                    {listing.station && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <ApperIcon name="MapPin" className="w-3 h-3" />
+                        <span>{listing.station.Name}</span>
+                      </div>
+                    )}
                     <div className="flex space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="flex-1"
-                         onClick={() => handleEditListing(listing)}
-                       >
-                         <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
-                         Edit
-                       </Button>
-                       <Button 
-                         variant="outline" 
-                         size="sm"
-                         onClick={() => handleDelete(listing)}
-                       >
-                         <ApperIcon name="Trash" className="w-4 h-4" />
-</Button>
+                        onClick={() => handleEditListing(listing)}
+                      >
+                        <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(listing)}
+                      >
+                        <ApperIcon name="Trash" className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -567,11 +613,11 @@ const tabs = [
 className="bg-white rounded-lg max-w-md w-full"
           >
             <form onSubmit={handleSubmit} className="p-6">
-              <div className="flex items-center justify-between mb-6">
+<div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
                   {(editingStation || editingListing || editingEvent || editingTouristAttraction) ? 'Edit' : 'Add'} {
                     activeTab === 'stations' ? 'Station' :
-                    activeTab === 'listings' ? 'Listing' : 
+                    activeTab === 'listings' ? 'Content' : 
                     activeTab === 'events' ? 'Event' : 'Tourist Attraction'
                   }
                 </h2>
@@ -631,9 +677,8 @@ className="bg-white rounded-lg max-w-md w-full"
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        required
+required
                       >
-                        <option value="attraction">Tourist Attraction</option>
                         <option value="food">Food & Dining</option>
                         <option value="shopping">Shopping</option>
                       </select>
@@ -896,13 +941,13 @@ required
                   >
 Cancel
                   </Button>
-                  <Button type="submit" className="flex-1">
+<Button type="submit" className="flex-1">
                     {(editingStation || editingListing || editingEvent || editingTouristAttraction) ? 'Update' : 'Add'} {
                       activeTab === 'stations' ? 'Station' : 
-                      activeTab === 'listings' ? 'Listing' : 
+                      activeTab === 'listings' ? 'Content' : 
                       activeTab === 'events' ? 'Event' : 'Tourist Attraction'
                     }
-</Button>
+                  </Button>
                 </div>
               </div>
             </form>
@@ -950,8 +995,9 @@ Cancel
               </Button>
             </div>
           </motion.div>
-        </motion.div>
+</motion.div>
       )}
+    </div>
     </div>
   );
 };
