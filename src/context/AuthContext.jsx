@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '@/services/api/authService';
-import { toast } from 'react-toastify';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import Error from "@/components/ui/Error";
+import { authService } from "@/services/api/authService";
 
 const AuthContext = createContext({});
 
@@ -16,7 +17,7 @@ export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
     checkAuthStatus();
   }, []);
 
@@ -39,6 +40,17 @@ export const AuthContextProvider = ({ children }) => {
       toast.success('Login successful!');
       return userData;
     } catch (error) {
+      // Handle email verification errors specifically
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        toast.error('Please verify your email address before signing in');
+        // Return verification error info for redirect handling
+        const verificationError = new Error(error.message);
+        verificationError.code = 'EMAIL_NOT_VERIFIED';
+        verificationError.email = error.email;
+        verificationError.userId = error.userId;
+        throw verificationError;
+      }
+      
       toast.error(error.message || 'Login failed');
       throw error;
     } finally {

@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useAuth } from '@/context/AuthContext';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import Card from '@/components/atoms/Card';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Card from "@/components/atoms/Card";
+import Input from "@/components/atoms/Input";
+import { useAuth } from "@/context/AuthContext";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -35,22 +35,44 @@ const LoginPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
     
     setIsLoading(true);
+    setErrors({});
+    
     try {
       await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (error) {
-      console.error('Login error:', error);
+      // Handle email verification errors with redirect
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        setErrors({ 
+          submit: 'Please verify your email address. Redirecting to verification page...' 
+        });
+        
+        // Redirect to verification page after showing message
+        setTimeout(() => {
+          navigate('/verify-email', { 
+            state: { 
+              email: error.email, 
+              userId: error.userId,
+              fromLogin: true 
+            } 
+          });
+        }, 2000);
+      } else {
+        setErrors({ submit: error.message });
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -58,6 +80,7 @@ const LoginPage = () => {
       [name]: value
     }));
     
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -65,7 +88,6 @@ const LoginPage = () => {
       }));
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-surface flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <motion.div
@@ -134,9 +156,14 @@ const LoginPage = () => {
               ) : (
                 'Sign in'
               )}
-            </Button>
+</Button>
+            
+            {errors.submit && (
+              <div className="mt-4 text-sm text-red-600 text-center">
+                {errors.submit}
+              </div>
+            )}
           </form>
-
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}

@@ -1,4 +1,4 @@
-import mockUsers from '@/services/mockData/users.json';
+import mockUsers from "@/services/mockData/users.json";
 
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -54,15 +54,17 @@ export const authService = {
     if (!user) {
       throw new Error('Invalid email or password');
     }
-    
-    if (user.password !== password) {
+if (user.password !== password) {
       throw new Error('Invalid email or password');
     }
     
     if (!user.emailVerified) {
-      throw new Error('Please verify your email address before signing in');
+      const verificationError = new Error('Please verify your email address before signing in');
+      verificationError.code = 'EMAIL_NOT_VERIFIED';
+      verificationError.email = user.email;
+      verificationError.userId = user.Id;
+      throw verificationError;
     }
-    
     // Update last login
     user.lastLogin = new Date().toISOString();
     saveUsers(users);
@@ -85,7 +87,6 @@ export const authService = {
     if (users.find(u => u.email === email)) {
       throw new Error('An account with this email already exists');
     }
-    
 // Create new user
     const newUser = {
       Id: getNextId(),
@@ -103,10 +104,11 @@ export const authService = {
     
     users.push(newUser);
     saveUsers(users);
-    
-    // Simulate sending verification email
+// Simulate sending verification email
     console.log(`Verification email sent to ${email} with token: ${newUser.verificationToken}`);
     
+    // Add verification token to localStorage for easy access during development
+    localStorage.setItem(`verification_token_${newUser.Id}`, newUser.verificationToken);
     return {
       Id: newUser.Id,
       name: newUser.name,
