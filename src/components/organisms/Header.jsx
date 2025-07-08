@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useAuth } from "@/context/AuthContext";
+import { useContext } from 'react';
+import { AuthContext } from '../../App';
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Settings from "@/components/pages/Settings";
+
 const Header = ({ user, onMenuToggle, currentCity }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { logout } = useAuth();
+  const { logout } = useContext(AuthContext);
   const getPlanColor = (plan) => {
     switch (plan) {
       case 'starter': return 'primary';
@@ -81,8 +83,8 @@ const Header = ({ user, onMenuToggle, currentCity }) => {
                   Support
                 </a>
                 <hr className="my-1" />
-                <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                  Sign Out
+<button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  Logout
                 </button>
               </motion.div>
             )}

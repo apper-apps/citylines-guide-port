@@ -3,9 +3,9 @@ import { toast } from 'react-toastify';
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const tableName = 'ad';
+const tableName = 'ad_performance';
 
-export const adsService = {
+export const adPerformanceService = {
   async getAll() {
     await delay(300);
     try {
@@ -19,12 +19,10 @@ export const adsService = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "title" } },
-          { field: { Name: "placement" } },
-          { field: { Name: "status" } },
           { field: { Name: "views" } },
           { field: { Name: "clicks" } },
-          { field: { Name: "revenue" } },
-          { field: { Name: "city" } }
+          { field: { Name: "ctr" } },
+          { field: { Name: "revenue" } }
         ]
       };
       
@@ -38,8 +36,8 @@ export const adsService = {
       
       return response.data || [];
     } catch (error) {
-      console.error("Error fetching ads:", error);
-      toast.error("Failed to fetch ads");
+      console.error("Error fetching ad performance:", error);
+      toast.error("Failed to fetch ad performance");
       return [];
     }
   },
@@ -57,12 +55,10 @@ export const adsService = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "title" } },
-          { field: { Name: "placement" } },
-          { field: { Name: "status" } },
           { field: { Name: "views" } },
           { field: { Name: "clicks" } },
-          { field: { Name: "revenue" } },
-          { field: { Name: "city" } }
+          { field: { Name: "ctr" } },
+          { field: { Name: "revenue" } }
         ]
       };
       
@@ -76,13 +72,13 @@ export const adsService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error fetching ad with ID ${id}:`, error);
-      toast.error("Failed to fetch ad");
+      console.error(`Error fetching ad performance with ID ${id}:`, error);
+      toast.error("Failed to fetch ad performance");
       return null;
     }
   },
 
-  async create(adData) {
+  async create(performanceData) {
     await delay(500);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -93,14 +89,12 @@ export const adsService = {
       
       const params = {
         records: [{
-          Name: adData.Name,
-          title: adData.title,
-          placement: adData.placement,
-          status: adData.status || 'active',
-          views: adData.views || 0,
-          clicks: adData.clicks || 0,
-          revenue: adData.revenue || 0,
-          city: adData.city
+          Name: performanceData.Name,
+          title: performanceData.title,
+          views: performanceData.views,
+          clicks: performanceData.clicks,
+          ctr: performanceData.ctr,
+          revenue: performanceData.revenue
         }]
       };
       
@@ -128,20 +122,20 @@ export const adsService = {
         }
         
         if (successfulRecords.length > 0) {
-          toast.success('Ad created successfully');
+          toast.success('Ad performance created successfully');
           return successfulRecords[0].data;
         }
       }
       
       return null;
     } catch (error) {
-      console.error("Error creating ad:", error);
-      toast.error("Failed to create ad");
+      console.error("Error creating ad performance:", error);
+      toast.error("Failed to create ad performance");
       return null;
     }
   },
 
-  async update(id, adData) {
+  async update(id, performanceData) {
     await delay(300);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -155,14 +149,12 @@ export const adsService = {
       };
       
       // Only include updateable fields
-      if (adData.Name !== undefined) updateData.Name = adData.Name;
-      if (adData.title !== undefined) updateData.title = adData.title;
-      if (adData.placement !== undefined) updateData.placement = adData.placement;
-      if (adData.status !== undefined) updateData.status = adData.status;
-      if (adData.views !== undefined) updateData.views = adData.views;
-      if (adData.clicks !== undefined) updateData.clicks = adData.clicks;
-      if (adData.revenue !== undefined) updateData.revenue = adData.revenue;
-      if (adData.city !== undefined) updateData.city = adData.city;
+      if (performanceData.Name !== undefined) updateData.Name = performanceData.Name;
+      if (performanceData.title !== undefined) updateData.title = performanceData.title;
+      if (performanceData.views !== undefined) updateData.views = performanceData.views;
+      if (performanceData.clicks !== undefined) updateData.clicks = performanceData.clicks;
+      if (performanceData.ctr !== undefined) updateData.ctr = performanceData.ctr;
+      if (performanceData.revenue !== undefined) updateData.revenue = performanceData.revenue;
       
       const params = {
         records: [updateData]
@@ -192,15 +184,15 @@ export const adsService = {
         }
         
         if (successfulUpdates.length > 0) {
-          toast.success('Ad updated successfully');
+          toast.success('Ad performance updated successfully');
           return successfulUpdates[0].data;
         }
       }
       
       return null;
     } catch (error) {
-      console.error("Error updating ad:", error);
-      toast.error("Failed to update ad");
+      console.error("Error updating ad performance:", error);
+      toast.error("Failed to update ad performance");
       return null;
     }
   },
@@ -239,37 +231,16 @@ export const adsService = {
         }
         
         if (successfulDeletions.length > 0) {
-          toast.success('Ad deleted successfully');
+          toast.success('Ad performance deleted successfully');
           return true;
         }
       }
       
       return false;
     } catch (error) {
-      console.error("Error deleting ad:", error);
-      toast.error("Failed to delete ad");
+      console.error("Error deleting ad performance:", error);
+      toast.error("Failed to delete ad performance");
       return false;
     }
-  },
-
-  // Legacy methods for backward compatibility
-  async getAdsData() {
-    const ads = await this.getAll();
-    return {
-      ads: ads,
-      totalRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0),
-      monthlyRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.3, // Mock calculation
-      platformFee: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.15, // Mock calculation
-      netRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.85, // Mock calculation
-      activeAds: ads.filter(ad => ad.status === 'active')
-    };
-  },
-
-  async createAd(adData) {
-    return await this.create(adData);
-  },
-
-  async updateAd(id, adData) {
-    return await this.update(id, adData);
   }
 };

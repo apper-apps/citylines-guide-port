@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Header from '@/components/organisms/Header';
 import Sidebar from '@/components/organisms/Sidebar';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-// Mock user data - enhanced with role-based permissions
-  const user = {
+// Get user from Redux store
+  const user = useSelector((state) => state.user.user) || {
     name: "John Chen",
     email: "john@example.com",
     subscriptionTier: "pro",
-    role: "admin", // Enhanced for admin capabilities
+    role: "admin",
     userId: 1
   };
 

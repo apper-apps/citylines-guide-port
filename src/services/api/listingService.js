@@ -3,9 +3,9 @@ import { toast } from 'react-toastify';
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const tableName = 'ad';
+const tableName = 'listing';
 
-export const adsService = {
+export const listingService = {
   async getAll() {
     await delay(300);
     try {
@@ -18,13 +18,21 @@ export const adsService = {
       const params = {
         fields: [
           { field: { Name: "Name" } },
+          { field: { Name: "type" } },
           { field: { Name: "title" } },
-          { field: { Name: "placement" } },
-          { field: { Name: "status" } },
-          { field: { Name: "views" } },
-          { field: { Name: "clicks" } },
-          { field: { Name: "revenue" } },
-          { field: { Name: "city" } }
+          { field: { Name: "description" } },
+          { field: { Name: "image_url" } },
+          { field: { Name: "link" } },
+          { field: { Name: "is_featured" } },
+          { field: { Name: "is_sponsored" } },
+          { 
+            field: { Name: "city_id" },
+            referenceField: { field: { Name: "Name" } }
+          },
+          { 
+            field: { Name: "station_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
         ]
       };
       
@@ -38,8 +46,8 @@ export const adsService = {
       
       return response.data || [];
     } catch (error) {
-      console.error("Error fetching ads:", error);
-      toast.error("Failed to fetch ads");
+      console.error("Error fetching listings:", error);
+      toast.error("Failed to fetch listings");
       return [];
     }
   },
@@ -56,13 +64,21 @@ export const adsService = {
       const params = {
         fields: [
           { field: { Name: "Name" } },
+          { field: { Name: "type" } },
           { field: { Name: "title" } },
-          { field: { Name: "placement" } },
-          { field: { Name: "status" } },
-          { field: { Name: "views" } },
-          { field: { Name: "clicks" } },
-          { field: { Name: "revenue" } },
-          { field: { Name: "city" } }
+          { field: { Name: "description" } },
+          { field: { Name: "image_url" } },
+          { field: { Name: "link" } },
+          { field: { Name: "is_featured" } },
+          { field: { Name: "is_sponsored" } },
+          { 
+            field: { Name: "city_id" },
+            referenceField: { field: { Name: "Name" } }
+          },
+          { 
+            field: { Name: "station_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
         ]
       };
       
@@ -76,13 +92,13 @@ export const adsService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error fetching ad with ID ${id}:`, error);
-      toast.error("Failed to fetch ad");
+      console.error(`Error fetching listing with ID ${id}:`, error);
+      toast.error("Failed to fetch listing");
       return null;
     }
   },
 
-  async create(adData) {
+  async create(listingData) {
     await delay(500);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -93,14 +109,16 @@ export const adsService = {
       
       const params = {
         records: [{
-          Name: adData.Name,
-          title: adData.title,
-          placement: adData.placement,
-          status: adData.status || 'active',
-          views: adData.views || 0,
-          clicks: adData.clicks || 0,
-          revenue: adData.revenue || 0,
-          city: adData.city
+          Name: listingData.Name,
+          type: listingData.type,
+          title: listingData.title,
+          description: listingData.description,
+          image_url: listingData.image_url,
+          link: listingData.link,
+          is_featured: listingData.is_featured ? "featured" : "",
+          is_sponsored: listingData.is_sponsored ? "sponsored" : "",
+          city_id: parseInt(listingData.city_id),
+          station_id: parseInt(listingData.station_id)
         }]
       };
       
@@ -128,20 +146,20 @@ export const adsService = {
         }
         
         if (successfulRecords.length > 0) {
-          toast.success('Ad created successfully');
+          toast.success('Listing created successfully');
           return successfulRecords[0].data;
         }
       }
       
       return null;
     } catch (error) {
-      console.error("Error creating ad:", error);
-      toast.error("Failed to create ad");
+      console.error("Error creating listing:", error);
+      toast.error("Failed to create listing");
       return null;
     }
   },
 
-  async update(id, adData) {
+  async update(id, listingData) {
     await delay(300);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -155,14 +173,16 @@ export const adsService = {
       };
       
       // Only include updateable fields
-      if (adData.Name !== undefined) updateData.Name = adData.Name;
-      if (adData.title !== undefined) updateData.title = adData.title;
-      if (adData.placement !== undefined) updateData.placement = adData.placement;
-      if (adData.status !== undefined) updateData.status = adData.status;
-      if (adData.views !== undefined) updateData.views = adData.views;
-      if (adData.clicks !== undefined) updateData.clicks = adData.clicks;
-      if (adData.revenue !== undefined) updateData.revenue = adData.revenue;
-      if (adData.city !== undefined) updateData.city = adData.city;
+      if (listingData.Name !== undefined) updateData.Name = listingData.Name;
+      if (listingData.type !== undefined) updateData.type = listingData.type;
+      if (listingData.title !== undefined) updateData.title = listingData.title;
+      if (listingData.description !== undefined) updateData.description = listingData.description;
+      if (listingData.image_url !== undefined) updateData.image_url = listingData.image_url;
+      if (listingData.link !== undefined) updateData.link = listingData.link;
+      if (listingData.is_featured !== undefined) updateData.is_featured = listingData.is_featured ? "featured" : "";
+      if (listingData.is_sponsored !== undefined) updateData.is_sponsored = listingData.is_sponsored ? "sponsored" : "";
+      if (listingData.city_id !== undefined) updateData.city_id = parseInt(listingData.city_id);
+      if (listingData.station_id !== undefined) updateData.station_id = parseInt(listingData.station_id);
       
       const params = {
         records: [updateData]
@@ -192,15 +212,15 @@ export const adsService = {
         }
         
         if (successfulUpdates.length > 0) {
-          toast.success('Ad updated successfully');
+          toast.success('Listing updated successfully');
           return successfulUpdates[0].data;
         }
       }
       
       return null;
     } catch (error) {
-      console.error("Error updating ad:", error);
-      toast.error("Failed to update ad");
+      console.error("Error updating listing:", error);
+      toast.error("Failed to update listing");
       return null;
     }
   },
@@ -239,37 +259,16 @@ export const adsService = {
         }
         
         if (successfulDeletions.length > 0) {
-          toast.success('Ad deleted successfully');
+          toast.success('Listing deleted successfully');
           return true;
         }
       }
       
       return false;
     } catch (error) {
-      console.error("Error deleting ad:", error);
-      toast.error("Failed to delete ad");
+      console.error("Error deleting listing:", error);
+      toast.error("Failed to delete listing");
       return false;
     }
-  },
-
-  // Legacy methods for backward compatibility
-  async getAdsData() {
-    const ads = await this.getAll();
-    return {
-      ads: ads,
-      totalRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0),
-      monthlyRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.3, // Mock calculation
-      platformFee: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.15, // Mock calculation
-      netRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.85, // Mock calculation
-      activeAds: ads.filter(ad => ad.status === 'active')
-    };
-  },
-
-  async createAd(adData) {
-    return await this.create(adData);
-  },
-
-  async updateAd(id, adData) {
-    return await this.update(id, adData);
   }
 };

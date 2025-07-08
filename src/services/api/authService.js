@@ -1,222 +1,260 @@
-import mockUsers from "@/services/mockData/users.json";
+import { toast } from 'react-toastify';
 
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Local storage keys
-const AUTH_STORAGE_KEY = 'citylines_auth_user';
-const USERS_STORAGE_KEY = 'citylines_users';
-
-// Initialize users in localStorage if not exists
-const initializeUsers = () => {
-  const existingUsers = localStorage.getItem(USERS_STORAGE_KEY);
-  if (!existingUsers) {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mockUsers));
-  }
-};
-
-// Get users from localStorage
-const getUsers = () => {
-  initializeUsers();
-  return JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-};
-
-// Save users to localStorage
-const saveUsers = (users) => {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-};
-
-// Get next available ID
-const getNextId = () => {
-  const users = getUsers();
-  const maxId = users.reduce((max, user) => Math.max(max, user.Id), 0);
-  return maxId + 1;
-};
+const tableName = 'app_User';
 
 export const authService = {
-  // Get current authenticated user
-  async getCurrentUser() {
-    await delay(200);
-    const userData = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!userData) {
-      throw new Error('No authenticated user');
-    }
-    return JSON.parse(userData);
-  },
-
-  // Login user
-  async login(email, password) {
+  async getAll() {
     await delay(300);
-    
-    const users = getUsers();
-    const user = users.find(u => u.email === email);
-    
-    if (!user) {
-      throw new Error('Invalid email or password');
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "email" } },
+          { field: { Name: "email_verified" } },
+          { field: { Name: "subscription_tier" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "last_login" } },
+          { field: { Name: "billing_period" } },
+          { field: { Name: "subscription_updated_at" } }
+        ]
+      };
+      
+      const response = await apperClient.fetchRecords(tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to fetch users");
+      return [];
     }
-if (user.password !== password) {
-      throw new Error('Invalid email or password');
-    }
-    
-    if (!user.emailVerified) {
-      const verificationError = new Error('Please verify your email address before signing in');
-      verificationError.code = 'EMAIL_NOT_VERIFIED';
-      verificationError.email = user.email;
-      verificationError.userId = user.Id;
-      throw verificationError;
-    }
-    // Update last login
-    user.lastLogin = new Date().toISOString();
-    saveUsers(users);
-    
-    // Store auth user (without password)
-    const authUser = { ...user };
-    delete authUser.password;
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
-    
-    return authUser;
   },
 
-  // Signup user
-  async signup(email, password, name) {
+  async getById(id) {
+    await delay(200);
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "email" } },
+          { field: { Name: "email_verified" } },
+          { field: { Name: "subscription_tier" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "last_login" } },
+          { field: { Name: "billing_period" } },
+          { field: { Name: "subscription_updated_at" } }
+        ]
+      };
+      
+      const response = await apperClient.getRecordById(tableName, id, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching user with ID ${id}:`, error);
+      toast.error("Failed to fetch user");
+      return null;
+    }
+  },
+
+  async create(userData) {
     await delay(400);
-    
-    const users = getUsers();
-    
-    // Check if email already exists
-    if (users.find(u => u.email === email)) {
-      throw new Error('An account with this email already exists');
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+      
+      const params = {
+        records: [{
+          Name: userData.Name,
+          email: userData.email,
+          password: userData.password,
+          email_verified: userData.email_verified || false,
+          subscription_tier: userData.subscription_tier || 'starter',
+          created_at: new Date().toISOString(),
+          last_login: null,
+          verification_token: userData.verification_token || this.generateToken(),
+          billing_period: userData.billing_period || 'monthly',
+          subscription_updated_at: new Date().toISOString()
+        }]
+      };
+      
+      const response = await apperClient.createRecord(tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+      
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('User created successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error("Failed to create user");
+      return null;
     }
-// Create new user
-    const newUser = {
-      Id: getNextId(),
-      name: name.trim(),
-      email: email.toLowerCase(),
-      password: password,
-      emailVerified: false,
-      subscriptionTier: 'starter',
-      billingPeriod: 'monthly',
-      subscriptionUpdatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      lastLogin: null,
-      verificationToken: this.generateToken()
-    };
-    
-    users.push(newUser);
-    saveUsers(users);
-// Simulate sending verification email
-    console.log(`Verification email sent to ${email} with token: ${newUser.verificationToken}`);
-    
-    // Add verification token to localStorage for easy access during development
-    localStorage.setItem(`verification_token_${newUser.Id}`, newUser.verificationToken);
-    return {
-      Id: newUser.Id,
-      name: newUser.name,
-      email: newUser.email,
-      emailVerified: newUser.emailVerified
-    };
   },
 
-  // Logout user
-  async logout() {
-    await delay(200);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  },
-
-  // Forgot password
-  async forgotPassword(email) {
+  async update(id, userData) {
     await delay(300);
-    
-    const users = getUsers();
-    const user = users.find(u => u.email === email);
-    
-    if (!user) {
-      // Don't reveal if email exists for security
-      return { message: 'If an account with this email exists, a reset link has been sent' };
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+      
+      const updateData = {
+        Id: id
+      };
+      
+      // Only include updateable fields
+      if (userData.Name !== undefined) updateData.Name = userData.Name;
+      if (userData.email !== undefined) updateData.email = userData.email;
+      if (userData.password !== undefined) updateData.password = userData.password;
+      if (userData.email_verified !== undefined) updateData.email_verified = userData.email_verified;
+      if (userData.subscription_tier !== undefined) updateData.subscription_tier = userData.subscription_tier;
+      if (userData.last_login !== undefined) updateData.last_login = userData.last_login;
+      if (userData.verification_token !== undefined) updateData.verification_token = userData.verification_token;
+      if (userData.reset_token !== undefined) updateData.reset_token = userData.reset_token;
+      if (userData.reset_token_expires !== undefined) updateData.reset_token_expires = userData.reset_token_expires;
+      if (userData.billing_period !== undefined) updateData.billing_period = userData.billing_period;
+      if (userData.subscription_updated_at !== undefined) updateData.subscription_updated_at = userData.subscription_updated_at;
+      
+      const params = {
+        records: [updateData]
+      };
+      
+      const response = await apperClient.updateRecord(tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+      
+      if (response.results) {
+        const successfulUpdates = response.results.filter(result => result.success);
+        const failedUpdates = response.results.filter(result => !result.success);
+        
+        if (failedUpdates.length > 0) {
+          console.error(`Failed to update ${failedUpdates.length} records:${JSON.stringify(failedUpdates)}`);
+          
+          failedUpdates.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulUpdates.length > 0) {
+          toast.success('User updated successfully');
+          return successfulUpdates[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast.error("Failed to update user");
+      return null;
     }
-    
-    // Generate reset token
-    user.resetToken = this.generateToken();
-    user.resetTokenExpires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
-    saveUsers(users);
-    
-    // Simulate sending reset email
-    console.log(`Reset email sent to ${email} with token: ${user.resetToken}`);
-    
-    return { message: 'Password reset email sent' };
   },
 
-  // Reset password
-  async resetPassword(token, newPassword) {
+  async delete(id) {
     await delay(300);
-    
-    const users = getUsers();
-    const user = users.find(u => u.resetToken === token);
-    
-    if (!user || !user.resetTokenExpires) {
-      throw new Error('Invalid or expired reset token');
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+      
+      const params = {
+        RecordIds: [id]
+      };
+      
+      const response = await apperClient.deleteRecord(tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+      
+      if (response.results) {
+        const successfulDeletions = response.results.filter(result => result.success);
+        const failedDeletions = response.results.filter(result => !result.success);
+        
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          
+          failedDeletions.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulDeletions.length > 0) {
+          toast.success('User deleted successfully');
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
+      return false;
     }
-    
-    if (new Date(user.resetTokenExpires) < new Date()) {
-      throw new Error('Reset token has expired');
-    }
-    
-    // Update password and clear reset token
-    user.password = newPassword;
-    delete user.resetToken;
-    delete user.resetTokenExpires;
-    saveUsers(users);
-    
-    return { message: 'Password reset successful' };
-  },
-
-  // Verify email
-  async verifyEmail(token) {
-    await delay(300);
-    
-    const users = getUsers();
-    const user = users.find(u => u.verificationToken === token);
-    
-    if (!user) {
-      throw new Error('Invalid verification token');
-    }
-    
-    // Mark email as verified
-    user.emailVerified = true;
-    delete user.verificationToken;
-    saveUsers(users);
-    
-    // Auto-login after verification
-    const authUser = { ...user };
-    delete authUser.password;
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
-    
-    return authUser;
-  },
-
-  // Resend verification email
-  async resendVerificationEmail(email) {
-    await delay(300);
-    
-    const users = getUsers();
-    const user = users.find(u => u.email === email);
-    
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    if (user.emailVerified) {
-      throw new Error('Email is already verified');
-    }
-    
-    // Generate new verification token
-    user.verificationToken = this.generateToken();
-    saveUsers(users);
-    
-    // Simulate sending verification email
-    console.log(`Verification email resent to ${email} with token: ${user.verificationToken}`);
-    
-    return { message: 'Verification email sent' };
   },
 
   // Generate random token

@@ -3,9 +3,9 @@ import { toast } from 'react-toastify';
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const tableName = 'ad';
+const tableName = 'app_Notification';
 
-export const adsService = {
+export const notificationService = {
   async getAll() {
     await delay(300);
     try {
@@ -19,12 +19,8 @@ export const adsService = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "title" } },
-          { field: { Name: "placement" } },
-          { field: { Name: "status" } },
-          { field: { Name: "views" } },
-          { field: { Name: "clicks" } },
-          { field: { Name: "revenue" } },
-          { field: { Name: "city" } }
+          { field: { Name: "description" } },
+          { field: { Name: "enabled" } }
         ]
       };
       
@@ -38,8 +34,8 @@ export const adsService = {
       
       return response.data || [];
     } catch (error) {
-      console.error("Error fetching ads:", error);
-      toast.error("Failed to fetch ads");
+      console.error("Error fetching notifications:", error);
+      toast.error("Failed to fetch notifications");
       return [];
     }
   },
@@ -57,12 +53,8 @@ export const adsService = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "title" } },
-          { field: { Name: "placement" } },
-          { field: { Name: "status" } },
-          { field: { Name: "views" } },
-          { field: { Name: "clicks" } },
-          { field: { Name: "revenue" } },
-          { field: { Name: "city" } }
+          { field: { Name: "description" } },
+          { field: { Name: "enabled" } }
         ]
       };
       
@@ -76,13 +68,13 @@ export const adsService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error fetching ad with ID ${id}:`, error);
-      toast.error("Failed to fetch ad");
+      console.error(`Error fetching notification with ID ${id}:`, error);
+      toast.error("Failed to fetch notification");
       return null;
     }
   },
 
-  async create(adData) {
+  async create(notificationData) {
     await delay(500);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -93,14 +85,10 @@ export const adsService = {
       
       const params = {
         records: [{
-          Name: adData.Name,
-          title: adData.title,
-          placement: adData.placement,
-          status: adData.status || 'active',
-          views: adData.views || 0,
-          clicks: adData.clicks || 0,
-          revenue: adData.revenue || 0,
-          city: adData.city
+          Name: notificationData.Name,
+          title: notificationData.title,
+          description: notificationData.description,
+          enabled: notificationData.enabled ? "enabled" : ""
         }]
       };
       
@@ -128,20 +116,20 @@ export const adsService = {
         }
         
         if (successfulRecords.length > 0) {
-          toast.success('Ad created successfully');
+          toast.success('Notification created successfully');
           return successfulRecords[0].data;
         }
       }
       
       return null;
     } catch (error) {
-      console.error("Error creating ad:", error);
-      toast.error("Failed to create ad");
+      console.error("Error creating notification:", error);
+      toast.error("Failed to create notification");
       return null;
     }
   },
 
-  async update(id, adData) {
+  async update(id, notificationData) {
     await delay(300);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -155,14 +143,10 @@ export const adsService = {
       };
       
       // Only include updateable fields
-      if (adData.Name !== undefined) updateData.Name = adData.Name;
-      if (adData.title !== undefined) updateData.title = adData.title;
-      if (adData.placement !== undefined) updateData.placement = adData.placement;
-      if (adData.status !== undefined) updateData.status = adData.status;
-      if (adData.views !== undefined) updateData.views = adData.views;
-      if (adData.clicks !== undefined) updateData.clicks = adData.clicks;
-      if (adData.revenue !== undefined) updateData.revenue = adData.revenue;
-      if (adData.city !== undefined) updateData.city = adData.city;
+      if (notificationData.Name !== undefined) updateData.Name = notificationData.Name;
+      if (notificationData.title !== undefined) updateData.title = notificationData.title;
+      if (notificationData.description !== undefined) updateData.description = notificationData.description;
+      if (notificationData.enabled !== undefined) updateData.enabled = notificationData.enabled ? "enabled" : "";
       
       const params = {
         records: [updateData]
@@ -192,15 +176,15 @@ export const adsService = {
         }
         
         if (successfulUpdates.length > 0) {
-          toast.success('Ad updated successfully');
+          toast.success('Notification updated successfully');
           return successfulUpdates[0].data;
         }
       }
       
       return null;
     } catch (error) {
-      console.error("Error updating ad:", error);
-      toast.error("Failed to update ad");
+      console.error("Error updating notification:", error);
+      toast.error("Failed to update notification");
       return null;
     }
   },
@@ -239,37 +223,16 @@ export const adsService = {
         }
         
         if (successfulDeletions.length > 0) {
-          toast.success('Ad deleted successfully');
+          toast.success('Notification deleted successfully');
           return true;
         }
       }
       
       return false;
     } catch (error) {
-      console.error("Error deleting ad:", error);
-      toast.error("Failed to delete ad");
+      console.error("Error deleting notification:", error);
+      toast.error("Failed to delete notification");
       return false;
     }
-  },
-
-  // Legacy methods for backward compatibility
-  async getAdsData() {
-    const ads = await this.getAll();
-    return {
-      ads: ads,
-      totalRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0),
-      monthlyRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.3, // Mock calculation
-      platformFee: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.15, // Mock calculation
-      netRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.85, // Mock calculation
-      activeAds: ads.filter(ad => ad.status === 'active')
-    };
-  },
-
-  async createAd(adData) {
-    return await this.create(adData);
-  },
-
-  async updateAd(id, adData) {
-    return await this.update(id, adData);
   }
 };

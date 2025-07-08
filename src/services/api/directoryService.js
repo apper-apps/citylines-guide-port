@@ -1,74 +1,224 @@
-import stationsData from '@/services/mockData/stations.json';
-import listingsData from '@/services/mockData/listings.json';
-import citiesData from '@/services/mockData/cities.json';
+import { toast } from 'react-toastify';
+import { cityService } from './cityService';
+import { stationService } from './stationService';
+import { listingService } from './listingService';
+
+// Simulate API delays
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const directoryService = {
-  getBuilderData: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return {
-      cities: citiesData,
-      stations: stationsData,
-      listings: listingsData
-    };
-  },
+  async getBuilderData() {
+    await delay(300);
+    try {
+      // Fetch data from multiple services to build directory
+      const [cities, stations, listings] = await Promise.all([
+        cityService.getAll(),
+        stationService.getAll(),
+        listingService.getAll()
+      ]);
 
-  createStation: async (stationData) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const newStation = {
-      ...stationData,
-      Id: Math.max(...stationsData.map(s => s.Id)) + 1,
-      order: stationsData.length + 1
-    };
-    stationsData.push(newStation);
-    return newStation;
-  },
-
-  createListing: async (listingData) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const newListing = {
-      ...listingData,
-      Id: Math.max(...listingsData.map(l => l.Id)) + 1,
-      isFeatured: false,
-      isSponsored: false
-    };
-    listingsData.push(newListing);
-    return newListing;
-  },
-
-  updateStation: async (id, stationData) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const index = stationsData.findIndex(station => station.Id === id);
-    if (index !== -1) {
-      stationsData[index] = { ...stationsData[index], ...stationData };
-      return stationsData[index];
+      return {
+        cities: cities.map(city => ({
+          Id: city.Id,
+          name: city.Name,
+          subdomain: city.subdomain,
+          status: city.status,
+          revenue: city.revenue || 0,
+          stations: city.stations || 0,
+          listings: city.listings || 0
+        })),
+        stations: stations.map(station => ({
+          Id: station.Id,
+          cityId: station.city_id?.Id || station.city_id,
+          name: station.Name,
+          line: station.line,
+          description: station.description,
+          order: station.order
+        })),
+        listings: listings.map(listing => ({
+          Id: listing.Id,
+          cityId: listing.city_id?.Id || listing.city_id,
+          stationId: listing.station_id?.Id || listing.station_id,
+          type: listing.type,
+          title: listing.title,
+          description: listing.description,
+          imageUrl: listing.image_url,
+          link: listing.link,
+          isFeatured: listing.is_featured === "featured",
+          isSponsored: listing.is_sponsored === "sponsored"
+        }))
+      };
+    } catch (error) {
+      console.error("Error fetching builder data:", error);
+      toast.error("Failed to fetch builder data");
+      return {
+        cities: [],
+        stations: [],
+        listings: []
+      };
     }
-    throw new Error('Station not found');
   },
 
-  updateListing: async (id, listingData) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const index = listingsData.findIndex(listing => listing.Id === id);
-    if (index !== -1) {
-      listingsData[index] = { ...listingsData[index], ...listingData };
-      return listingsData[index];
+  async createStation(stationData) {
+    await delay(500);
+    try {
+      const result = await stationService.create({
+        Name: stationData.name,
+        line: stationData.line,
+        description: stationData.description,
+        order: stationData.order,
+        city_id: stationData.cityId
+      });
+      
+      if (result) {
+        toast.success('Station created successfully');
+        return {
+          Id: result.Id,
+          cityId: result.city_id?.Id || result.city_id,
+          name: result.Name,
+          line: result.line,
+          description: result.description,
+          order: result.order
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error creating station:", error);
+      toast.error("Failed to create station");
+      return null;
     }
-    throw new Error('Listing not found');
   },
 
-  delete: async (id) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    // Try to find in stations first
-    let index = stationsData.findIndex(item => item.Id === id);
-    if (index !== -1) {
-      return stationsData.splice(index, 1)[0];
+  async createListing(listingData) {
+    await delay(500);
+    try {
+      const result = await listingService.create({
+        Name: listingData.title,
+        type: listingData.type,
+        title: listingData.title,
+        description: listingData.description,
+        image_url: listingData.imageUrl,
+        link: listingData.link,
+        is_featured: listingData.isFeatured,
+        is_sponsored: listingData.isSponsored,
+        city_id: listingData.cityId,
+        station_id: listingData.stationId
+      });
+      
+      if (result) {
+        toast.success('Listing created successfully');
+        return {
+          Id: result.Id,
+          cityId: result.city_id?.Id || result.city_id,
+          stationId: result.station_id?.Id || result.station_id,
+          type: result.type,
+          title: result.title,
+          description: result.description,
+          imageUrl: result.image_url,
+          link: result.link,
+          isFeatured: result.is_featured === "featured",
+          isSponsored: result.is_sponsored === "sponsored"
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error creating listing:", error);
+      toast.error("Failed to create listing");
+      return null;
     }
-    
-    // Try to find in listings
-    index = listingsData.findIndex(item => item.Id === id);
-    if (index !== -1) {
-      return listingsData.splice(index, 1)[0];
+  },
+
+  async updateStation(id, stationData) {
+    await delay(300);
+    try {
+      const result = await stationService.update(id, {
+        Name: stationData.name,
+        line: stationData.line,
+        description: stationData.description,
+        order: stationData.order,
+        city_id: stationData.cityId
+      });
+      
+      if (result) {
+        toast.success('Station updated successfully');
+        return {
+          Id: result.Id,
+          cityId: result.city_id?.Id || result.city_id,
+          name: result.Name,
+          line: result.line,
+          description: result.description,
+          order: result.order
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error updating station:", error);
+      toast.error("Failed to update station");
+      return null;
     }
-    
-    throw new Error('Item not found');
+  },
+
+  async updateListing(id, listingData) {
+    await delay(300);
+    try {
+      const result = await listingService.update(id, {
+        Name: listingData.title,
+        type: listingData.type,
+        title: listingData.title,
+        description: listingData.description,
+        image_url: listingData.imageUrl,
+        link: listingData.link,
+        is_featured: listingData.isFeatured,
+        is_sponsored: listingData.isSponsored,
+        city_id: listingData.cityId,
+        station_id: listingData.stationId
+      });
+      
+      if (result) {
+        toast.success('Listing updated successfully');
+        return {
+          Id: result.Id,
+          cityId: result.city_id?.Id || result.city_id,
+          stationId: result.station_id?.Id || result.station_id,
+          type: result.type,
+          title: result.title,
+          description: result.description,
+          imageUrl: result.image_url,
+          link: result.link,
+          isFeatured: result.is_featured === "featured",
+          isSponsored: result.is_sponsored === "sponsored"
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error updating listing:", error);
+      toast.error("Failed to update listing");
+      return null;
+    }
+  },
+
+  async delete(id) {
+    await delay(300);
+    try {
+      // Try to delete from stations first
+      const stationResult = await stationService.delete(id);
+      if (stationResult) {
+        toast.success('Station deleted successfully');
+        return { success: true, type: 'station' };
+      }
+      
+      // Try to delete from listings
+      const listingResult = await listingService.delete(id);
+      if (listingResult) {
+        toast.success('Listing deleted successfully');
+        return { success: true, type: 'listing' };
+      }
+      
+      throw new Error('Item not found');
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      toast.error("Failed to delete item");
+      return { success: false, message: error.message };
+    }
   }
 };
