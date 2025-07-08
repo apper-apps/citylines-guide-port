@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Badge from '@/components/atoms/Badge';
-
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
+import Settings from "@/components/pages/Settings";
 const Header = ({ user, onMenuToggle, currentCity }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-
+  const { logout } = useAuth();
   const getPlanColor = (plan) => {
     switch (plan) {
       case 'starter': return 'primary';
@@ -73,16 +74,16 @@ const Header = ({ user, onMenuToggle, currentCity }) => {
                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Profile Settings
                 </a>
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+<a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Billing & Plans
                 </a>
                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Support
                 </a>
                 <hr className="my-1" />
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Sign Out
-                </a>
+                </button>
               </motion.div>
             )}
           </div>
