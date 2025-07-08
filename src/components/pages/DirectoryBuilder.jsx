@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import Card from '@/components/atoms/Card';
-import Badge from '@/components/atoms/Badge';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import Empty from '@/components/ui/Empty';
-import { directoryService } from '@/services/api/directoryService';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
+import Card from "@/components/atoms/Card";
+import Input from "@/components/atoms/Input";
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import { directoryService } from "@/services/api/directoryService";
 
 const DirectoryBuilder = () => {
   const [selectedCity, setSelectedCity] = useState(null);
@@ -17,8 +17,11 @@ const DirectoryBuilder = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('stations');
+const [activeTab, setActiveTab] = useState('stations');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingStation, setEditingStation] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [stationToDelete, setStationToDelete] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -27,6 +30,11 @@ const DirectoryBuilder = () => {
     type: 'station'
   });
 
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    line: '',
+    description: ''
+  });
   const loadData = async () => {
     try {
       setLoading(true);
@@ -49,14 +57,25 @@ const DirectoryBuilder = () => {
     loadData();
   }, []);
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (activeTab === 'stations') {
-        await directoryService.createStation({
-          ...formData,
-          cityId: selectedCity.Id
-        });
+        if (editingStation) {
+          // Update existing station
+          await directoryService.updateStation(editingStation.Id, {
+            name: editFormData.name,
+            line: editFormData.line,
+            description: editFormData.description,
+            cityId: selectedCity.Id
+          });
+        } else {
+          // Create new station
+          await directoryService.createStation({
+            ...formData,
+            cityId: selectedCity.Id
+          });
+        }
         await loadData();
       } else {
         await directoryService.createListing({
@@ -66,10 +85,40 @@ const DirectoryBuilder = () => {
         await loadData();
       }
       setFormData({ name: '', line: '', description: '', type: 'station' });
+      setEditFormData({ name: '', line: '', description: '' });
+      setEditingStation(null);
       setShowAddForm(false);
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const handleEdit = (station) => {
+    setEditingStation(station);
+    setEditFormData({
+      name: station.name,
+      line: station.line,
+      description: station.description
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDelete = (station) => {
+    setStationToDelete(station);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (stationToDelete) {
+      try {
+        await directoryService.delete(stationToDelete.Id);
+        await loadData();
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+    setShowDeleteConfirm(false);
+    setStationToDelete(null);
   };
 
   const tabs = [
@@ -171,13 +220,22 @@ const DirectoryBuilder = () => {
                       </div>
                       <Badge variant="primary">{station.line}</Badge>
                     </div>
-                    <p className="text-sm text-gray-700">{station.description}</p>
+<p className="text-sm text-gray-700">{station.description}</p>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEdit(station)}
+                      >
                         <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(station)}
+                      >
                         <ApperIcon name="Trash" className="w-4 h-4" />
                       </Button>
                     </div>
@@ -243,33 +301,47 @@ const DirectoryBuilder = () => {
             animate={{ scale: 1, opacity: 1 }}
             className="bg-white rounded-lg max-w-md w-full"
           >
-            <form onSubmit={handleSubmit} className="p-6">
+<form onSubmit={handleSubmit} className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Add {activeTab === 'stations' ? 'Station' : 'Listing'}
+                  {editingStation ? 'Edit' : 'Add'} {activeTab === 'stations' ? 'Station' : 'Listing'}
                 </h2>
                 <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingStation(null);
+                    setEditFormData({ name: '', line: '', description: '' });
+                  }}
                   className="p-2 hover:bg-gray-100 rounded-md"
                 >
                   <ApperIcon name="X" className="w-5 h-5" />
                 </button>
               </div>
-
-              <div className="space-y-4">
+<div className="space-y-4">
                 <Input
                   label="Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={editingStation ? editFormData.name : formData.name}
+                  onChange={(e) => {
+                    if (editingStation) {
+                      setEditFormData({ ...editFormData, name: e.target.value });
+                    } else {
+                      setFormData({ ...formData, name: e.target.value });
+                    }
+                  }}
                   required
                 />
                 
                 {activeTab === 'stations' && (
                   <Input
                     label="Line"
-                    value={formData.line}
-                    onChange={(e) => setFormData({ ...formData, line: e.target.value })}
+                    value={editingStation ? editFormData.line : formData.line}
+                    onChange={(e) => {
+                      if (editingStation) {
+                        setEditFormData({ ...editFormData, line: e.target.value });
+                      } else {
+                        setFormData({ ...formData, line: e.target.value });
+                      }
+                    }}
                     required
                   />
                 )}
@@ -277,30 +349,82 @@ const DirectoryBuilder = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
-                  </label>
+</label>
                   <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    value={editingStation ? editFormData.description : formData.description}
+                    onChange={(e) => {
+                      if (editingStation) {
+                        setEditFormData({ ...editFormData, description: e.target.value });
+                      } else {
+                        setFormData({ ...formData, description: e.target.value });
+                      }
+                    }}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
-                <div className="flex space-x-3">
+<div className="flex space-x-3">
                   <Button
-                    type="button"
                     variant="outline"
-                    onClick={() => setShowAddForm(false)}
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setEditingStation(null);
+                      setEditFormData({ name: '', line: '', description: '' });
+                    }}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button type="submit" className="flex-1">
-                    Add {activeTab === 'stations' ? 'Station' : 'Listing'}
+                    {editingStation ? 'Update' : 'Add'} {activeTab === 'stations' ? 'Station' : 'Listing'}
                   </Button>
                 </div>
               </div>
-            </form>
+</form>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-lg max-w-md w-full p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="p-2 hover:bg-gray-100 rounded-md"
+              >
+                <ApperIcon name="X" className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{stationToDelete?.name}"? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </Button>
+            </div>
           </motion.div>
         </motion.div>
       )}
