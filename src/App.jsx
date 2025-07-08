@@ -1,4 +1,4 @@
-import { Navigate, Route, Router, Routes } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import { ToastContainer } from "react-toastify";
 import { AuthContextProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -62,3 +62,5 @@ function App() {
     </AuthContextProvider>
   );
 }
+
+export default App
