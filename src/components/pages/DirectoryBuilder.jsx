@@ -10,6 +10,7 @@ import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import { touristAttractionService } from "@/services/api/touristAttractionService";
 import { directoryService } from "@/services/api/directoryService";
+import { eventListingService } from "@/services/api/eventListingService";
 
 const DirectoryBuilder = () => {
   const [selectedCity, setSelectedCity] = useState(null);
@@ -28,7 +29,7 @@ const DirectoryBuilder = () => {
   const [events, setEvents] = useState([]);
   const [touristAttractions, setTouristAttractions] = useState([]);
   const [selectedContentType, setSelectedContentType] = useState('all');
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     name: '',
     line: '',
     description: '',
@@ -39,8 +40,8 @@ const DirectoryBuilder = () => {
     stationId: '',
     isFeatured: false,
     isSponsored: false,
-eventDate: '',
-    eventTime: ''
+    startDate: '',
+    endDate: ''
   });
 
   const [editingTouristAttraction, setEditingTouristAttraction] = useState(null);
@@ -54,9 +55,9 @@ eventDate: '',
     link: '',
     stationId: '',
     isFeatured: false,
-    isSponsored: false,
-    eventDate: '',
-    eventTime: ''
+isSponsored: false,
+    startDate: '',
+    endDate: ''
 });
 
   const loadData = async () => {
@@ -65,10 +66,12 @@ eventDate: '',
       setError(null);
       const data = await directoryService.getBuilderData();
       setCities(data.cities);
-      setStations(data.stations);
+setStations(data.stations);
       setListings(data.listings);
-      setEvents(data.events || []);
       
+      // Load events from eventListing service
+      const eventsData = await eventListingService.getAll();
+      setEvents(eventsData);
       // Load tourist attractions
       const attractionsData = await touristAttractionService.getAll();
       setTouristAttractions(attractionsData);
@@ -128,21 +131,28 @@ eventDate: '',
           });
         }
       } else if (activeTab === 'events') {
+} else if (activeTab === 'events') {
         if (editingEvent) {
           // Update existing event
-          await directoryService.updateEvent(editingEvent.Id, {
-            title: editFormData.title,
+          await eventListingService.update(editingEvent.Id, {
+            Name: editFormData.name,
             description: editFormData.description,
-            eventDate: editFormData.eventDate,
-            eventTime: editFormData.eventTime,
-            stationId: editFormData.stationId,
-            cityId: selectedCity.Id
+            imageUrl: editFormData.imageUrl,
+            startDate: editFormData.startDate,
+            endDate: editFormData.endDate,
+            cityId: selectedCity.Id,
+            appUserId: selectedCity.Owner?.Id || null
           });
         } else {
           // Create new event
-          await directoryService.createEvent({
-            ...formData,
-            cityId: selectedCity.Id
+          await eventListingService.create({
+            Name: formData.name,
+            description: formData.description,
+            imageUrl: formData.imageUrl,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            cityId: selectedCity.Id,
+            appUserId: selectedCity.Owner?.Id || null
           });
         }
       } else if (activeTab === 'touristAttractions') {
@@ -183,10 +193,10 @@ eventDate: '',
       imageUrl: '',
       link: '',
       stationId: '',
-      isFeatured: false,
+isFeatured: false,
       isSponsored: false,
-      eventDate: '',
-      eventTime: ''
+      startDate: '',
+      endDate: ''
     });
     setEditFormData({
       name: '',
@@ -197,10 +207,10 @@ eventDate: '',
       imageUrl: '',
       link: '',
       stationId: '',
-      isFeatured: false,
+isFeatured: false,
       isSponsored: false,
-eventDate: '',
-      eventTime: ''
+      startDate: '',
+      endDate: ''
     });
     setEditingStation(null);
     setEditingListing(null);
@@ -233,14 +243,15 @@ eventDate: '',
     setShowAddForm(true);
   };
 
-  const handleEditEvent = (event) => {
+const handleEditEvent = (event) => {
     setEditingEvent(event);
     setEditFormData({
-      title: event.title,
+      name: event.Name,
       description: event.description,
-      eventDate: event.eventDate,
-      eventTime: event.eventTime,
-stationId: event.stationId
+      imageUrl: event.imageUrl,
+      startDate: event.startDate ? new Date(event.startDate).toISOString().split('T')[0] : '',
+      endDate: event.endDate ? new Date(event.endDate).toISOString().split('T')[0] : '',
+      stationId: event.stationId
     });
     setShowAddForm(true);
   };
@@ -267,8 +278,8 @@ const confirmDelete = async () => {
           await directoryService.delete(itemToDelete.Id);
         } else if (activeTab === 'listings') {
           await directoryService.deleteListing(itemToDelete.Id);
-        } else if (activeTab === 'events') {
-          await directoryService.deleteEvent(itemToDelete.Id);
+} else if (activeTab === 'events') {
+          await eventListingService.delete(itemToDelete.Id);
         } else if (activeTab === 'touristAttractions') {
           await touristAttractionService.delete(itemToDelete.Id);
         }
@@ -517,10 +528,13 @@ const tabs = [
               {events.map(event => (
                 <Card key={event.Id} className="hover:shadow-md transition-shadow">
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between">
+<div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                        <p className="text-sm text-gray-600">{event.eventDate} at {event.eventTime}</p>
+                        <h3 className="font-semibold text-gray-900">{event.Name}</h3>
+                        <p className="text-sm text-gray-600">
+                          {event.startDate && new Date(event.startDate).toLocaleDateString()}
+                          {event.endDate && event.endDate !== event.startDate && ` - ${new Date(event.endDate).toLocaleDateString()}`}
+                        </p>
                       </div>
                       <Badge variant="secondary">Event</Badge>
                     </div>
@@ -781,17 +795,30 @@ required
 
                 {activeTab === 'events' && (
                   <>
-                    <Input
-                      label="Event Title"
-                      value={editingEvent ? editFormData.title : formData.title}
+<Input
+                      label="Event Name"
+                      value={editingEvent ? editFormData.name : formData.name}
                       onChange={(e) => {
                         if (editingEvent) {
-                          setEditFormData({ ...editFormData, title: e.target.value });
+                          setEditFormData({ ...editFormData, name: e.target.value });
                         } else {
-                          setFormData({ ...formData, title: e.target.value });
+                          setFormData({ ...formData, name: e.target.value });
                         }
                       }}
                       required
+                    />
+                    <Input
+                      label="Image URL"
+                      value={editingEvent ? editFormData.imageUrl : formData.imageUrl}
+                      onChange={(e) => {
+                        if (editingEvent) {
+                          setEditFormData({ ...editFormData, imageUrl: e.target.value });
+                        } else {
+                          setFormData({ ...formData, imageUrl: e.target.value });
+                        }
+                      }}
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
                     />
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -816,32 +843,32 @@ required
                         ))}
                       </select>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+<div className="grid grid-cols-2 gap-4">
                       <Input
-                        label="Event Date"
+                        label="Start Date"
                         type="date"
-                        value={editingEvent ? editFormData.eventDate : formData.eventDate}
+                        value={editingEvent ? editFormData.startDate : formData.startDate}
                         onChange={(e) => {
                           if (editingEvent) {
-                            setEditFormData({ ...editFormData, eventDate: e.target.value });
+                            setEditFormData({ ...editFormData, startDate: e.target.value });
                           } else {
-                            setFormData({ ...formData, eventDate: e.target.value });
+                            setFormData({ ...formData, startDate: e.target.value });
                           }
                         }}
                         required
                       />
                       <Input
-                        label="Event Time"
-                        type="time"
-                        value={editingEvent ? editFormData.eventTime : formData.eventTime}
+                        label="End Date"
+                        type="date"
+                        value={editingEvent ? editFormData.endDate : formData.endDate}
                         onChange={(e) => {
                           if (editingEvent) {
-                            setEditFormData({ ...editFormData, eventTime: e.target.value });
+                            setEditFormData({ ...editFormData, endDate: e.target.value });
                           } else {
-                            setFormData({ ...formData, eventTime: e.target.value });
+                            setFormData({ ...formData, endDate: e.target.value });
                           }
                         }}
-required
+                        required
                       />
                     </div>
                   </>
@@ -976,7 +1003,7 @@ Cancel
                 <ApperIcon name="X" className="w-5 h-5" />
 </button>
             </div>
-            <p className="text-gray-600 mb-6">
+<p className="text-gray-600 mb-6">
               Are you sure you want to delete "{itemToDelete?.name || itemToDelete?.title || itemToDelete?.Name}"? This action cannot be undone.
             </p>
             <div className="flex space-x-3">

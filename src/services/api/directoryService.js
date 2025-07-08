@@ -49,7 +49,7 @@ try {
 isFeatured: listing.is_featured === "featured",
           isSponsored: listing.is_sponsored === "sponsored"
         })),
-        events: [] // Mock events data - would be replaced with actual event service
+events: [] // Events are now handled by eventListingService
       };
     } catch (error) {
       console.error("Error fetching builder data:", error);
@@ -242,62 +242,6 @@ isFeatured: listing.is_featured === "featured",
     }
   },
 
-  async createEvent(eventData) {
-    await delay(500);
-    try {
-      // Mock event creation - would be replaced with actual event service
-      const mockEvent = {
-        Id: Date.now(),
-        title: eventData.title,
-        description: eventData.description,
-        eventDate: eventData.eventDate,
-        eventTime: eventData.eventTime,
-        stationId: eventData.stationId,
-        cityId: eventData.cityId
-      };
-      
-      toast.success('Event created successfully');
-      return mockEvent;
-    } catch (error) {
-      console.error("Error creating event:", error);
-      toast.error("Failed to create event");
-      return null;
-    }
-  },
-
-  async updateEvent(id, eventData) {
-    await delay(300);
-    try {
-      // Mock event update - would be replaced with actual event service
-      const mockEvent = {
-        Id: id,
-        title: eventData.title,
-        description: eventData.description,
-        eventDate: eventData.eventDate,
-        eventTime: eventData.eventTime,
-        stationId: eventData.stationId,
-        cityId: eventData.cityId
-      };
-      
-      toast.success('Event updated successfully');
-      return mockEvent;
-    } catch (error) {
-      console.error("Error updating event:", error);
-      toast.error("Failed to update event");
-      return null;
-    }
-  },
-
-  async deleteEvent(id) {
-    await delay(300);
-    try {
-      // Mock event deletion - would be replaced with actual event service
-      toast.success('Event deleted successfully');
-      return { success: true, type: 'event' };
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      toast.error("Failed to delete event");
-      return { success: false, message: error.message };
-    }
-  }
+// Event operations are now handled by eventListingService
+  // These methods are deprecated and should not be used
 };
