@@ -1,12 +1,11 @@
-import { toast } from 'react-toastify';
-
+import { toast } from "react-toastify";
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const tableName = 'city';
 
 export const cityService = {
-  async getAll() {
+async getAll() {
     await delay(300);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -15,7 +14,7 @@ export const cityService = {
         apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
       });
       
-      const params = {
+const params = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "subdomain" } },
@@ -23,7 +22,9 @@ export const cityService = {
           { field: { Name: "claimed_at" } },
           { field: { Name: "revenue" } },
           { field: { Name: "stations" } },
-          { field: { Name: "listings" } }
+          { field: { Name: "listings" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "ModifiedOn" } }
         ]
       };
       
@@ -43,7 +44,7 @@ export const cityService = {
     }
   },
 
-  async getById(id) {
+async getById(id) {
     await delay(200);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -52,7 +53,7 @@ export const cityService = {
         apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
       });
       
-      const params = {
+const params = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "subdomain" } },
@@ -60,7 +61,9 @@ export const cityService = {
           { field: { Name: "claimed_at" } },
           { field: { Name: "revenue" } },
           { field: { Name: "stations" } },
-          { field: { Name: "listings" } }
+          { field: { Name: "listings" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "ModifiedOn" } }
         ]
       };
       
@@ -80,7 +83,7 @@ export const cityService = {
     }
   },
 
-  async create(cityData) {
+async create(cityData) {
     await delay(500);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -138,7 +141,7 @@ export const cityService = {
     }
   },
 
-  async update(id, cityData) {
+async update(id, cityData) {
     await delay(300);
     try {
       const { ApperClient } = window.ApperSDK;
@@ -201,7 +204,7 @@ export const cityService = {
     }
   },
 
-  async delete(id) {
+async delete(id) {
     await delay(300);
     try {
       const { ApperClient } = window.ApperSDK;
