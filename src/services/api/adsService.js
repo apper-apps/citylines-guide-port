@@ -339,18 +339,7 @@ export const adsService = {
         totalAds: 0,
         activeAds: 0,
         ads: []
-      };
-    }
 };
-    } catch (error) {
-      console.error("Error fetching ads data:", error);
-      toast.error("Failed to fetch ads data");
-      return {
-        totalRevenue: 0,
-        totalAds: 0,
-        activeAds: 0,
-        ads: []
-      };
     }
   },
 
