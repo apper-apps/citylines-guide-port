@@ -1,4 +1,5 @@
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+import React from "react";
 
 // Simulate API delays
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -250,21 +251,110 @@ export const adsService = {
       toast.error("Failed to delete ad");
       return false;
     }
+},
+
+  // Aggregate ads data for revenue dashboard
+  async getAdsData() {
+    await delay(400);
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "title" } },
+          { field: { Name: "placement" } },
+          { field: { Name: "status" } },
+          { field: { Name: "views" } },
+          { field: { Name: "clicks" } },
+          { field: { Name: "revenue" } },
+          { field: { Name: "city" } },
+          { field: { Name: "contentType" } },
+          { field: { Name: "content" } },
+          { field: { Name: "startDate" } },
+          { field: { Name: "endDate" } }
+        ]
+      };
+      
+      const response = await apperClient.fetchRecords(tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return {
+          totalRevenue: 0,
+          totalAds: 0,
+          activeAds: 0,
+          ads: []
+        };
+      }
+      
+      const ads = response.data || [];
+      
+      // Calculate aggregate metrics
+      const totalRevenue = ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0);
+      const totalAds = ads.length;
+      const activeAds = ads.filter(ad => ad.status === 'active').length;
+      
+      // Calculate additional metrics
+      const totalViews = ads.reduce((sum, ad) => sum + (ad.views || 0), 0);
+      const totalClicks = ads.reduce((sum, ad) => sum + (ad.clicks || 0), 0);
+      const averageCTR = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
+      
+      const result = {
+        totalRevenue,
+        totalAds,
+        activeAds,
+        totalViews,
+        totalClicks,
+        averageCTR: parseFloat(averageCTR.toFixed(2)),
+        ads: ads.map(ad => ({
+          Id: ad.Id,
+          Name: ad.Name,
+          title: ad.title,
+          placement: ad.placement,
+          status: ad.status,
+          views: ad.views || 0,
+          clicks: ad.clicks || 0,
+          revenue: ad.revenue || 0,
+          city: ad.city,
+          contentType: ad.contentType,
+          content: ad.content,
+          startDate: ad.startDate,
+          endDate: ad.endDate,
+          ctr: ad.views > 0 ? parseFloat(((ad.clicks || 0) / ad.views * 100).toFixed(2)) : 0
+        }))
+      };
+      
+      return result;
+    } catch (error) {
+      console.error("Error fetching ads data:", error);
+      toast.error("Failed to fetch ads data");
+      return {
+        totalRevenue: 0,
+        totalAds: 0,
+        activeAds: 0,
+        ads: []
+      };
+    }
+};
+    } catch (error) {
+      console.error("Error fetching ads data:", error);
+      toast.error("Failed to fetch ads data");
+      return {
+        totalRevenue: 0,
+        totalAds: 0,
+        activeAds: 0,
+        ads: []
+      };
+    }
   },
 
   // Legacy methods for backward compatibility
-  async getAdsData() {
-    const ads = await this.getAll();
-    return {
-      ads: ads,
-      totalRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0),
-      monthlyRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.3, // Mock calculation
-      platformFee: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.15, // Mock calculation
-      netRevenue: ads.reduce((sum, ad) => sum + (ad.revenue || 0), 0) * 0.85, // Mock calculation
-      activeAds: ads.filter(ad => ad.status === 'active')
-    };
-  },
-
   async createAd(adData) {
     return await this.create(adData);
   },
