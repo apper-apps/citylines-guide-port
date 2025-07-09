@@ -11,6 +11,9 @@ import Loading from "@/components/ui/Loading";
 import { touristAttractionService } from "@/services/api/touristAttractionService";
 import { directoryService } from "@/services/api/directoryService";
 import { eventListingService } from "@/services/api/eventListingService";
+import { reviewService } from "@/services/api/reviewService";
+import { imageService } from "@/services/api/imageService";
+import { youtubeVideoService } from "@/services/api/youtubeVideoService";
 
 const DirectoryBuilder = () => {
   const [selectedCity, setSelectedCity] = useState(null);
@@ -26,9 +29,13 @@ const DirectoryBuilder = () => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [events, setEvents] = useState([]);
+const [events, setEvents] = useState([]);
   const [touristAttractions, setTouristAttractions] = useState([]);
   const [selectedContentType, setSelectedContentType] = useState('all');
+  const [reviews, setReviews] = useState([]);
+  const [images, setImages] = useState([]);
+  const [youtubeVideos, setYoutubeVideos] = useState([]);
+  const [selectedListingId, setSelectedListingId] = useState(null);
 const [formData, setFormData] = useState({
     name: '',
     line: '',
@@ -41,7 +48,13 @@ const [formData, setFormData] = useState({
     isFeatured: false,
     isSponsored: false,
     startDate: '',
-    endDate: ''
+    endDate: '',
+    reviewText: '',
+    reviewRating: 5,
+    reviewAuthor: '',
+    reviewSource: 'tripadvisor',
+    videoUrl: '',
+    imageDescription: ''
   });
 
   const [editingTouristAttraction, setEditingTouristAttraction] = useState(null);
@@ -57,7 +70,13 @@ const [formData, setFormData] = useState({
     isFeatured: false,
 isSponsored: false,
     startDate: '',
-    endDate: ''
+    endDate: '',
+    reviewText: '',
+    reviewRating: 5,
+    reviewAuthor: '',
+    reviewSource: 'tripadvisor',
+    videoUrl: '',
+    imageDescription: ''
 });
 
   const loadData = async () => {
@@ -72,9 +91,26 @@ setStations(data.stations);
       // Load events from eventListing service
       const eventsData = await eventListingService.getAll();
       setEvents(eventsData);
-      // Load tourist attractions
+// Load tourist attractions
       const attractionsData = await touristAttractionService.getAll();
       setTouristAttractions(attractionsData);
+      
+      // Load reviews, images, and videos for selected listing
+      if (selectedListingId) {
+        const [tripAdvisorReviews, googleReviews, listingImages, listingVideos] = await Promise.all([
+          reviewService.getTripAdvisorReviews(selectedListingId),
+          reviewService.getGoogleReviews(selectedListingId),
+          imageService.getImagesByListing(selectedListingId),
+          youtubeVideoService.getVideosByListing(selectedListingId)
+        ]);
+        
+        setReviews([
+          ...tripAdvisorReviews.map(review => ({ ...review, source: 'tripadvisor' })),
+          ...googleReviews.map(review => ({ ...review, source: 'google' }))
+        ]);
+        setImages(listingImages);
+        setYoutubeVideos(listingVideos);
+      }
       
       if (data.cities.length > 0) {
         setSelectedCity(data.cities[0]);
@@ -130,7 +166,6 @@ setStations(data.stations);
             cityId: selectedCity.Id
           });
         }
-      } else if (activeTab === 'events') {
 } else if (activeTab === 'events') {
         if (editingEvent) {
           // Update existing event
@@ -171,8 +206,35 @@ setStations(data.stations);
             description: formData.description,
             imageUrl: formData.imageUrl,
             station: formData.stationId
-          });
+});
         }
+      } else if (activeTab === 'reviews') {
+        // Create review
+        const reviewData = {
+          review_text: formData.reviewText,
+          rating: formData.reviewRating,
+          author: formData.reviewAuthor,
+          listing_id: selectedListingId
+        };
+        
+        if (formData.reviewSource === 'tripadvisor') {
+          await reviewService.createTripAdvisorReview(reviewData);
+        } else {
+          await reviewService.createGoogleReview(reviewData);
+        }
+      } else if (activeTab === 'images') {
+        // Create image
+        await imageService.createImage({
+          image_url: formData.imageUrl,
+          description: formData.imageDescription,
+          listing_id: selectedListingId
+        });
+      } else if (activeTab === 'videos') {
+        // Create YouTube video
+        await youtubeVideoService.createVideo({
+          video_url: formData.videoUrl,
+          listing_id: selectedListingId
+        });
       }
       
       await loadData();
@@ -196,7 +258,13 @@ setStations(data.stations);
 isFeatured: false,
       isSponsored: false,
       startDate: '',
-      endDate: ''
+      endDate: '',
+      reviewText: '',
+      reviewRating: 5,
+      reviewAuthor: '',
+      reviewSource: 'tripadvisor',
+      videoUrl: '',
+      imageDescription: ''
     });
     setEditFormData({
       name: '',
@@ -210,7 +278,13 @@ isFeatured: false,
 isFeatured: false,
       isSponsored: false,
       startDate: '',
-      endDate: ''
+      endDate: '',
+      reviewText: '',
+      reviewRating: 5,
+      reviewAuthor: '',
+      reviewSource: 'tripadvisor',
+      videoUrl: '',
+      imageDescription: ''
     });
     setEditingStation(null);
     setEditingListing(null);
@@ -280,8 +354,14 @@ const confirmDelete = async () => {
           await directoryService.deleteListing(itemToDelete.Id);
 } else if (activeTab === 'events') {
           await eventListingService.delete(itemToDelete.Id);
-        } else if (activeTab === 'touristAttractions') {
+} else if (activeTab === 'touristAttractions') {
           await touristAttractionService.delete(itemToDelete.Id);
+        } else if (activeTab === 'reviews') {
+          await reviewService.deleteReview(itemToDelete.Id, itemToDelete.source);
+        } else if (activeTab === 'images') {
+          await imageService.deleteImage(itemToDelete.Id);
+        } else if (activeTab === 'videos') {
+          await youtubeVideoService.deleteVideo(itemToDelete.Id);
         }
         await loadData();
       } catch (err) {
@@ -296,7 +376,10 @@ const tabs = [
     { id: 'stations', label: 'MRT Stations', icon: 'MapPin' },
     { id: 'listings', label: 'Food & Shopping', icon: 'ShoppingBag' },
     { id: 'events', label: 'Events', icon: 'Calendar' },
-    { id: 'touristAttractions', label: 'Tourist Attractions', icon: 'Landmark' }
+    { id: 'touristAttractions', label: 'Tourist Attractions', icon: 'Landmark' },
+    { id: 'reviews', label: 'Reviews', icon: 'Star' },
+    { id: 'images', label: 'Images', icon: 'ImageIcon' },
+    { id: 'videos', label: 'Videos', icon: 'Youtube' }
   ];
 // Filter listings based on selected content type
   const filteredListings = selectedContentType === 'all' 
@@ -326,9 +409,15 @@ const tabs = [
           <h1 className="text-2xl font-bold text-gray-900">Content Editor</h1>
           <p className="text-gray-600">Manage your city's food, shopping, and transit content</p>
         </div>
-        <Button onClick={() => setShowAddForm(true)}>
+<Button onClick={() => setShowAddForm(true)}>
           <ApperIcon name="Plus" className="w-4 h-4 mr-2" />
-          Add {activeTab === 'stations' ? 'Station' : activeTab === 'listings' ? 'Content' : activeTab === 'events' ? 'Event' : 'Tourist Attraction'}
+          Add {activeTab === 'stations' ? 'Station' : 
+               activeTab === 'listings' ? 'Content' : 
+               activeTab === 'events' ? 'Event' : 
+               activeTab === 'touristAttractions' ? 'Tourist Attraction' :
+               activeTab === 'reviews' ? 'Review' :
+               activeTab === 'images' ? 'Image' :
+               activeTab === 'videos' ? 'Video' : 'Item'}
         </Button>
       </div>
       {/* City Selector */}
@@ -488,22 +577,35 @@ const tabs = [
                         <span>{listing.station.Name}</span>
                       </div>
                     )}
-                    <div className="flex space-x-2">
+<div className="flex space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="flex-1"
-                        onClick={() => handleEditListing(listing)}
+                        onClick={() => {
+                          setSelectedListingId(listing.Id);
+                          handleEditListing(listing);
+                        }}
                       >
                         <ApperIcon name="Edit" className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
-                      <Button 
+<Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => handleDelete(listing)}
                       >
                         <ApperIcon name="Trash" className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedListingId(listing.Id);
+                          setActiveTab('reviews');
+                        }}
+                      >
+                        <ApperIcon name="Star" className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -612,8 +714,167 @@ const tabs = [
 </div>
           )}
         </div>
+)}
+
+      {activeTab === 'reviews' && (
+        <div className="space-y-4">
+          {!selectedListingId ? (
+            <Empty
+              title="Select a listing first"
+              message="Please select a listing to view and manage its reviews."
+              icon="Star"
+            />
+          ) : reviews.length === 0 ? (
+            <Empty
+              title="No reviews found"
+              message="No reviews have been added for this listing yet."
+              actionLabel="Add Review"
+              onAction={() => setShowAddForm(true)}
+              icon="Star"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reviews.map(review => (
+                <Card key={review.Id} className="hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <ApperIcon
+                              key={i}
+                              name="Star"
+                              className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <Badge variant={review.source === 'tripadvisor' ? 'accent' : 'secondary'}>
+                          {review.source === 'tripadvisor' ? 'TripAdvisor' : 'Google'}
+                        </Badge>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(review)}
+                      >
+                        <ApperIcon name="Trash" className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{review.author}</p>
+                      <p className="text-sm text-gray-700 line-clamp-3">{review.review_text}</p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
+      {activeTab === 'images' && (
+        <div className="space-y-4">
+          {!selectedListingId ? (
+            <Empty
+              title="Select a listing first"
+              message="Please select a listing to view and manage its images."
+              icon="ImageIcon"
+            />
+          ) : images.length === 0 ? (
+            <Empty
+              title="No images found"
+              message="No images have been added for this listing yet."
+              actionLabel="Add Image"
+              onAction={() => setShowAddForm(true)}
+              icon="ImageIcon"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {images.map(image => (
+                <Card key={image.Id} className="hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                      <img 
+                        src={image.image_url} 
+                        alt={image.description || 'Listing image'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-700 line-clamp-2">{image.description}</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(image)}
+                        className="mt-2 w-full"
+                      >
+                        <ApperIcon name="Trash" className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'videos' && (
+        <div className="space-y-4">
+          {!selectedListingId ? (
+            <Empty
+              title="Select a listing first"
+              message="Please select a listing to view and manage its videos."
+              icon="Youtube"
+            />
+          ) : youtubeVideos.length === 0 ? (
+            <Empty
+              title="No videos found"
+              message="No YouTube videos have been added for this listing yet."
+              actionLabel="Add Video"
+              onAction={() => setShowAddForm(true)}
+              icon="Youtube"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {youtubeVideos.map(video => {
+                const videoId = youtubeVideoService.extractVideoId(video.video_url);
+                return (
+                  <Card key={video.Id} className="hover:shadow-md transition-shadow">
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                        {videoId && (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            title="YouTube video"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-700 truncate">{video.video_url}</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDelete(video)}
+                          className="mt-2 w-full"
+                        >
+                          <ApperIcon name="Trash" className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
       {/* Add Form Modal */}
       {showAddForm && (
         <motion.div
@@ -632,7 +893,11 @@ className="bg-white rounded-lg max-w-md w-full"
                   {(editingStation || editingListing || editingEvent || editingTouristAttraction) ? 'Edit' : 'Add'} {
                     activeTab === 'stations' ? 'Station' :
                     activeTab === 'listings' ? 'Content' : 
-                    activeTab === 'events' ? 'Event' : 'Tourist Attraction'
+                    activeTab === 'events' ? 'Event' : 
+                    activeTab === 'touristAttractions' ? 'Tourist Attraction' :
+                    activeTab === 'reviews' ? 'Review' :
+                    activeTab === 'images' ? 'Image' :
+                    activeTab === 'videos' ? 'Video' : 'Item'
                   }
                 </h2>
                 <button
@@ -924,9 +1189,92 @@ required
                         ))}
                       </select>
                     </div>
+</>
+                )}
+
+                {activeTab === 'reviews' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Review Source
+                      </label>
+                      <select
+                        value={formData.reviewSource}
+                        onChange={(e) => setFormData({ ...formData, reviewSource: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="tripadvisor">TripAdvisor</option>
+                        <option value="google">Google</option>
+                      </select>
+                    </div>
+                    <Input
+                      label="Author Name"
+                      value={formData.reviewAuthor}
+                      onChange={(e) => setFormData({ ...formData, reviewAuthor: e.target.value })}
+                      required
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rating
+                      </label>
+                      <select
+                        value={formData.reviewRating}
+                        onChange={(e) => setFormData({ ...formData, reviewRating: parseInt(e.target.value) })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value={1}>1 Star</option>
+                        <option value={2}>2 Stars</option>
+                        <option value={3}>3 Stars</option>
+                        <option value={4}>4 Stars</option>
+                        <option value={5}>5 Stars</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Review Text
+                      </label>
+                      <textarea
+                        value={formData.reviewText}
+                        onChange={(e) => setFormData({ ...formData, reviewText: e.target.value })}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                      />
+                    </div>
                   </>
                 )}
 
+                {activeTab === 'images' && (
+                  <>
+                    <Input
+                      label="Image URL"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      required
+                    />
+                    <Input
+                      label="Description"
+                      value={formData.imageDescription}
+                      onChange={(e) => setFormData({ ...formData, imageDescription: e.target.value })}
+                      placeholder="Image description"
+                    />
+                  </>
+                )}
+
+                {activeTab === 'videos' && (
+                  <>
+                    <Input
+                      label="YouTube Video URL"
+                      value={formData.videoUrl}
+                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      required
+                    />
+                  </>
+                )}
 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
@@ -972,7 +1320,11 @@ Cancel
                     {(editingStation || editingListing || editingEvent || editingTouristAttraction) ? 'Update' : 'Add'} {
                       activeTab === 'stations' ? 'Station' : 
                       activeTab === 'listings' ? 'Content' : 
-                      activeTab === 'events' ? 'Event' : 'Tourist Attraction'
+                      activeTab === 'events' ? 'Event' : 
+                      activeTab === 'touristAttractions' ? 'Tourist Attraction' :
+                      activeTab === 'reviews' ? 'Review' :
+                      activeTab === 'images' ? 'Image' :
+                      activeTab === 'videos' ? 'Video' : 'Item'
                     }
                   </Button>
                 </div>
